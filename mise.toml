@@ -1,0 +1,11 @@
+[tools]
+opentofu = "1.11"
+terragrunt = "0.96"
+
+[settings]
+env_file = "./env"
+
+[tasks.hello]
+description = "Hello, mise!"
+run = "echo \"Hello, mise!\""
+

@@ -1,0 +1,33 @@
+{
+  "name": "Homelab Dev Environment (OpenTofu)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+
+  "customizations" : {
+    "jetbrains" : {
+      "backend" : "IntelliJ",
+      "settings" : {
+        "com.intellij:app:BaseRefactoringSettings.rename_search_in_comments_for_file": false,
+        "com.intellij:app:BaseRefactoringSettings.rename_search_for_references_for_directory": false,
+        "com.intellij:app:BaseRefactoringSettings.move_search_for_references_for_file": false,
+        "com.intellij:app:HttpConfigurable.use_proxy_pac": true,
+      },
+      "plugins": [
+        "org.intellij.plugins.hcl",
+        "com.github.catppuccin.jetbrains",
+        "com.intellij.plugins.vscodekeymap"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git" : {},
+    "ghcr.io/devcontainers/features/common-utils:2.5": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "installOhMyZshConfig": true,
+      "configureZshAsDefaultShell": true
+    }  },
+  "remoteUser": "ubuntu"
+}

@@ -1,0 +1,9 @@
+# SOPS
+sops/key.txt
+sops/secrets.yaml
+
+# Terragrunt
+**/.terragrunt-cache/*
+
+# IDEA
+.idea/*
