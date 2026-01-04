@@ -7,3 +7,5 @@ sops/secrets.yaml
 
 # IDEA
 .idea/*
+
+.env

@@ -13,8 +13,7 @@ remote_state {
     endpoint = "https://${local.secrets.cloudflare.r2.account_id}.r2.cloudflarestorage.com"
     bucket   = local.secrets.cloudflare.r2.bucket_name
 
-    # Path in the bucket matches your project structure
-    key      = "${path_relative_to_include()}/terraform.tfstate"
+    key      = "${path_relative_to_include()}/tofu.tfstate"
 
     region   = "auto"
 
