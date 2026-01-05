@@ -8,10 +8,9 @@ variable "virtual_environment_node_name" {
   description = "The node name for the Proxmox Virtual Environment API"
 }
 
-variable "cloud_image_file" {
+variable "cloud_image_id" {
   type = string
-  description = "Direct download link for cloud image iso"
-  default = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+  description = "The cloud image id from downloaded image"
 }
 
 variable "ssh_public_key" {

@@ -1,11 +1,3 @@
-resource "proxmox_virtual_environment_download_file" "cloud_images" {
-  content_type = "iso"
-  datastore_id = "local"
-  node_name    = var.virtual_environment_node_name
-
-  url = var.cloud_image_file
-}
-
 resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
   content_type = "snippets"
   datastore_id = "local"
@@ -64,7 +56,7 @@ resource "proxmox_virtual_environment_vm" "cloud_template" {
 
   disk {
     datastore_id = "local-lvm"
-    file_id      = proxmox_virtual_environment_download_file.cloud_images.id
+    file_id      = var.cloud_image_id
     interface    = "scsi0"
     iothread     = true
     discard      = "on"
