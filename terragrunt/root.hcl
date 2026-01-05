@@ -40,7 +40,7 @@ provider "proxmox" {
   insecure  = true
 
   ssh {
-    agent  = false
+    agent  = true
     username = "${local.secrets.proxmox.ssh.host.username}"
     private_key = <<EOF_KEY
 ${local.secrets.proxmox.ssh.host.private_key}

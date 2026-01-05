@@ -7,6 +7,10 @@ terraform {
   source = "../../../modules/proxmox-vm-template"
 }
 
+dependency "ubuntu_img" {
+  config_path = "../../images/vm/ubuntu2404"
+}
+
 locals {
   secrets = include.root.locals.secrets
 }
@@ -20,5 +24,5 @@ inputs = {
   vm_id                         = 9000
   virtual_environment_node_name = "lab"
 
-  cloud_image_file = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+  cloud_image_id = dependency.ubuntu_img.outputs.file_id
 }
