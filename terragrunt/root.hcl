@@ -50,6 +50,21 @@ EOF_KEY
 EOF
 }
 
+generate "versions" {
+  path = "versions.tf"
+  if_exists     = "overwrite_terragrunt"
+  contents = <<EOF
+terraform {
+  required_providers {
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "0.90.0"
+    }
+  }
+}
+EOF
+}
+
 inputs = {
   secrets = local.secrets
 }
