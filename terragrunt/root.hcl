@@ -1,6 +1,6 @@
 locals {
   secrets_path = "${get_repo_root()}/sops/secrets.enc.yaml"
-  secrets = yamldecode(sops_decrypt_file(local.secrets_path))
+  secrets      = yamldecode(sops_decrypt_file(local.secrets_path))
 }
 
 remote_state {
@@ -13,9 +13,9 @@ remote_state {
     endpoint = "https://${local.secrets.cloudflare.r2.account_id}.r2.cloudflarestorage.com"
     bucket   = local.secrets.cloudflare.r2.bucket_name
 
-    key      = "${path_relative_to_include()}/tofu.tfstate"
+    key = "${path_relative_to_include()}/tofu.tfstate"
 
-    region   = "auto"
+    region = "auto"
 
     access_key = local.secrets.cloudflare.r2.access_key
     secret_key = local.secrets.cloudflare.r2.secret_key
@@ -33,7 +33,7 @@ remote_state {
 generate "provider" {
   path      = "provider.tf"
   if_exists = "overwrite"
-  contents = <<EOF
+  contents  = <<EOF
 provider "proxmox" {
   endpoint  = "${local.secrets.proxmox.endpoint}"
   api_token = "${local.secrets.proxmox.token_id}=${local.secrets.proxmox.token_secret}"
@@ -51,9 +51,9 @@ EOF
 }
 
 generate "versions" {
-  path = "versions.tf"
-  if_exists     = "overwrite_terragrunt"
-  contents = <<EOF
+  path      = "versions.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
 terraform {
   required_providers {
     proxmox = {

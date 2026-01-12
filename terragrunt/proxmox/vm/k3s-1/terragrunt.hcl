@@ -1,5 +1,5 @@
 include "root" {
-  path = find_in_parent_folders("root.hcl")
+  path   = find_in_parent_folders("root.hcl")
   expose = true
 }
 
@@ -21,8 +21,8 @@ inputs = {
 
   cloud_image_id = dependency.ubuntu_image.outputs.file_id
 
-  ip_address = "192.168.1.20/24"
-  on_boot = true
+  ip_address     = "192.168.1.20/24"
+  on_boot        = true
   ssh_public_key = local.secrets.proxmox.ssh.default.public_key
 
   user_data = file("../script/install-k3s.sh")
