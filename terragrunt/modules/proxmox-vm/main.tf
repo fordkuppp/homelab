@@ -1,11 +1,55 @@
-resource "proxmox_virtual_environment_vm" "node" {
+resource "proxmox_virtual_environment_file" "cloudinit_file" {
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = var.node_name
+  source_raw {
+    file_name = "${var.vm_name}-config.yaml"
+    data      = <<-EOF
+#cloud-config
+users:
+  - name: ubuntu
+    lock_passwd: true
+    groups:
+      - sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - "${trimspace(var.ssh_public_key)}"
+    sudo: ALL=(ALL) NOPASSWD:ALL
+package_update: true
+packages:
+  - qemu-guest-agent
+  - net-tools
+  - curl
+write_files:
+  - path: /usr/local/bin/user-data.sh
+    permissions: '0755'
+    content: |
+      ${indent(6, var.user_data)}
+runcmd:
+  - [systemctl, enable, qemu-guest-agent]
+  - [systemctl, start, qemu-guest-agent]
+  - [ sh, "/usr/local/bin/user-data.sh" ]
+EOF
+  }
+}
+
+resource "proxmox_virtual_environment_file" "metadata_file" {
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = var.node_name
+  source_raw {
+    file_name = "${var.vm_name}-metadata.yaml"
+    data      = <<-EOF
+instance-id: ${var.vm_name}
+local-hostname: ${var.vm_name}
+EOF
+  }
+}
+
+resource "proxmox_virtual_environment_vm" "vm" {
   name      = var.vm_name
   node_name = var.node_name
   vm_id     = var.vm_id
-
-  clone {
-    vm_id = var.template_id
-  }
 
   agent {
     enabled = true
@@ -13,6 +57,7 @@ resource "proxmox_virtual_environment_vm" "node" {
 
   initialization {
     datastore_id = var.datastore_id
+    interface    = "ide2"
 
     dns {
       servers = var.dns_servers
@@ -25,11 +70,8 @@ resource "proxmox_virtual_environment_vm" "node" {
       }
     }
 
-    user_account {
-      keys = [trimspace(var.ssh_public_key)]
-      username = var.username
-      password = var.password
-    }
+    user_data_file_id = proxmox_virtual_environment_file.cloudinit_file.id
+    meta_data_file_id = proxmox_virtual_environment_file.metadata_file.id
   }
 
   cpu {
@@ -47,6 +89,7 @@ resource "proxmox_virtual_environment_vm" "node" {
 
   disk {
     datastore_id = var.datastore_id
+    file_id      = var.cloud_image_id
     interface = "scsi0"
     size = var.disk_size_gb
   }

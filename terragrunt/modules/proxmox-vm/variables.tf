@@ -1,6 +1,7 @@
 variable "node_name" {
   type        = string
   description = "The Proxmox node where the VM will be created"
+  default     = "lab"
 }
 
 variable "vm_name" {
@@ -12,9 +13,9 @@ variable "vm_id" {
   default     = null
 }
 
-variable "template_id" {
-  type        = number
-  description = "The ID of the template to clone from"
+variable "cloud_image_id" {
+  type = string
+  description = "The cloud image id from downloaded image"
 }
 
 variable "ip_address" {
@@ -61,19 +62,14 @@ variable "ssh_public_key" {
   description = "Public SSH key for the default user"
 }
 
-variable "username" {
-  type = string
-  description = "SSH username"
-}
-
-variable "password" {
-  type = string
-  description = "SSH password"
-}
-
 variable "bridge" {
   type    = string
   default = "vmbr0"
+}
+
+variable "user_data" {
+  type = string
+  description = "Script to run when VM init"
 }
 
 variable "on_boot" {
