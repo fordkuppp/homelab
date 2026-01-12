@@ -2,8 +2,8 @@
 opentofu = "1.11"
 terragrunt = "0.96"
 
-[settings]
-env_file = "./env"
+[env]
+SOPS_AGE_KEY_FILE = "{{ exec(command='git rev-parse --show-toplevel')}}/sops/key.txt"
 
 [tasks.hello]
 description = "Hello, mise!"
