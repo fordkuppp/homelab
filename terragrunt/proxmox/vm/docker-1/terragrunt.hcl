@@ -19,7 +19,7 @@ inputs = {
   vm_name = "docker-1"
   vm_id   = 1200
 
-  memory = 4096
+  memory = 8192
 
   cloud_image_id = dependency.ubuntu_image.outputs.file_id
 
