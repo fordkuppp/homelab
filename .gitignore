@@ -4,6 +4,7 @@ sops/secrets.yaml
 
 # Terragrunt
 **/.terragrunt-cache/*
+**/.terraform/*
 
 # IDEA
 .idea/*
