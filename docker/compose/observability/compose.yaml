@@ -1,0 +1,40 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - type: volume
+        source: nfs-general-data
+        target: /prometheus
+        volume:
+          subpath: observability/prometheus
+
+  grafana:
+    image: grafana/grafana:12.3
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - type: volume
+        source: nfs-general-data
+        target: /etc/grafana/provisioning/datasources
+        volume:
+          subpath: observability/grafana
+
+volumes:
+  nfs-general-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=192.168.1.11,rw,nolock,soft,nfsvers=4"
+      device: ":/mnt/general/data"
