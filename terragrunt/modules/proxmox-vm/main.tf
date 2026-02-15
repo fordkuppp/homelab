@@ -16,7 +16,7 @@ users:
     shell: /bin/bash
     ssh_authorized_keys:
       - "${trimspace(var.ssh_public_key)}"
-    sudo: ALL=(ALL)
+    sudo: ALL=(ALL) ALL
 package_update: true
 packages:
   - qemu-guest-agent
