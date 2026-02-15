@@ -32,7 +32,7 @@ services:
     volumes:
       - type: volume
         source: nfs-general-data
-        target: /etc/grafana/provisioning/datasources
+        target: /var/lib/grafana
         volume:
           subpath: observability/grafana
 
