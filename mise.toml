@@ -1,11 +1,18 @@
 [tools]
+"aqua:bitwarden/sdk-sm" = "2.0.0"
 opentofu = "1.11"
 terragrunt = "0.96"
 
 [env]
+_.file = '.env'
 SOPS_AGE_KEY_FILE = "{{ exec(command='git rev-parse --show-toplevel')}}/sops/key.txt"
 
 [tasks.hello]
 description = "Hello, mise!"
 run = "echo \"Hello, mise!\""
 
+[tasks.list-secrets]
+run = "bws secret list"
+
+[tasks.age-key]
+run = "bws secret get ${BWS_SOPS_AGE_ID} | jq -r .value > ${SOPS_AGE_KEY_FILE}"
