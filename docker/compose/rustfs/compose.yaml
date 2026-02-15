@@ -2,8 +2,6 @@ services:
   rustfs:
     image: rustfs/rustfs:1.0.0-alpha.83
     container_name: rustfs
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yaml'
     ports:
       - 9000:9000
       - 9001:9001
