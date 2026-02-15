@@ -41,9 +41,9 @@ services:
     volumes:
       - type: volume
         source: nfs-general-data
-        target: /etc/otelcol/config.yaml
+        target: /etc/otelcol/
         volume:
-          subpath: observability/otel/config.yaml
+          subpath: observability/otel
     ports:
       - 1888:1888 # pprof extension
       - 8888:8888 # Prometheus metrics exposed by the Collector
