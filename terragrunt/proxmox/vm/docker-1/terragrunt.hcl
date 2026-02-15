@@ -19,6 +19,8 @@ inputs = {
   vm_name = "docker-1"
   vm_id   = 1200
 
+  memory = 4096
+
   cloud_image_id = dependency.ubuntu_image.outputs.file_id
 
   ip_address     = "192.168.1.30/24"
