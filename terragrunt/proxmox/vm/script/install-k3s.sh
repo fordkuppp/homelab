@@ -1,3 +1,3 @@
 #!/bin/bash
 
-touch testcloudinithelloworlduwu
+curl -sfL https://get.k3s.io | sh -
