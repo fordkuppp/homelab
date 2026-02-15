@@ -1,0 +1,23 @@
+# IP Plan
+
+## Overview
+
+- LAN subnet: `192.168.1.0/24`
+- Gateway/router: `192.168.1.1`
+- DHCP range (router-managed): `192.168.1.100–192.168.1.200`
+
+## Reserved Ranges (Static)
+
+> These ranges are conventions to keep things predictable. Adjust as needed, but avoid overlapping DHCP.
+
+### Network infrastructure
+- `192.168.1.2–192.168.1.9`
+
+### Homelab infrastructure (Proxmox, Truenas)
+- `192.168.1.10–192.168.1.19`
+
+### Kubernetes cluster node
+- `192.168.1.20–192.168.1.29`
+
+### Komodo docker
+- `192.168.1.30–192.168.1.39`
