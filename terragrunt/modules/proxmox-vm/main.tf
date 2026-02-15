@@ -7,21 +7,38 @@ resource "proxmox_virtual_environment_file" "cloudinit_file" {
     data      = <<-EOF
 #cloud-config
 ssh_pwauth: true
+groups:
+  - docker
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
 users:
   - name: ubuntu
     lock_passwd: false
     passwd: $y$j9T$HL3CsBtQghb1NSvf09jD01$LrXV0QxK2UAvwuvJ4F1oc7H3qGY.nutuERhZR0lJSJ9
     groups:
       - sudo
+      - docker
     shell: /bin/bash
     ssh_authorized_keys:
       - "${trimspace(var.ssh_public_key)}"
     sudo: ALL=(ALL) ALL
 package_update: true
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
 packages:
   - qemu-guest-agent
   - net-tools
   - curl
+  - nfs-common
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
 write_files:
   - path: /usr/local/bin/user-data.sh
     permissions: '0755'
