@@ -23,8 +23,6 @@ services:
     container_name: grafana
     ports:
       - 3000:3000
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # Need this in order to use `host.docker.internal` domain
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
