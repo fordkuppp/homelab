@@ -39,7 +39,11 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector:0.145.0
     volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+      - type: volume
+        source: nfs-general-data
+        target: /etc/otelcol/config.yaml
+        volume:
+          subpath: observability/otel/config.yaml
     ports:
       - 1888:1888 # pprof extension
       - 8888:8888 # Prometheus metrics exposed by the Collector
