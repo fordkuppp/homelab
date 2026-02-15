@@ -6,15 +6,17 @@ resource "proxmox_virtual_environment_file" "cloudinit_file" {
     file_name = "${var.vm_name}-config.yaml"
     data      = <<-EOF
 #cloud-config
+ssh_pwauth: true
 users:
   - name: ubuntu
-    lock_passwd: true
+    lock_passwd: false
+    passwd: $y$j9T$HL3CsBtQghb1NSvf09jD01$LrXV0QxK2UAvwuvJ4F1oc7H3qGY.nutuERhZR0lJSJ9
     groups:
       - sudo
     shell: /bin/bash
     ssh_authorized_keys:
       - "${trimspace(var.ssh_public_key)}"
-    sudo: ALL=(ALL) NOPASSWD:ALL
+    sudo: ALL=(ALL)
 package_update: true
 packages:
   - qemu-guest-agent
