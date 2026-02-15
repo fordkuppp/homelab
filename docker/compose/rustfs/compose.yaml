@@ -1,0 +1,24 @@
+services:
+  rustfs:
+    image: rustfs/rustfs:1.0.0-alpha.83
+    container_name: rustfs
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - 9000:9000
+      - 9001:9001
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: nfs-general-data
+        target: /data
+        volume:
+          subpath: rustfs
+
+volumes:
+  nfs-general-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=192.168.1.11,rw,nolock,soft,nfsvers=4"
+      device: ":/mnt/general/data"
