@@ -22,4 +22,5 @@ EOF
 export HOME=/home/ubuntu
 curl -sSL https://raw.githubusercontent.com/moghtech/komodo/main/scripts/setup-periphery.py -o /tmp/setup-periphery.py
 python3 /tmp/setup-periphery.py
+systemctl enable --now periphery
 docker compose up -d
