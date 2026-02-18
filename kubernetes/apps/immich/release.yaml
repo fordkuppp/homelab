@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmChart
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  interval: 5m0s
+  chart: immich
+  reconcileStrategy: ChartVersion
+  sourceRef:
+    kind: HelmRepository
+    name: immich
+  version: '0.10'
