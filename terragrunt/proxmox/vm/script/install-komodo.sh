@@ -11,7 +11,7 @@ rmdir /mnt/nas_temp
 mkdir -p /opt/komodo
 cd /opt/komodo
 
-cat <<'EOF' > docker-compose.yml
+cat <<'EOF' > compose.yaml
 ${compose_content}
 EOF
 cat <<'EOF' > compose.env
@@ -23,4 +23,4 @@ export HOME=/home/ubuntu
 curl -sSL https://raw.githubusercontent.com/moghtech/komodo/main/scripts/setup-periphery.py -o /tmp/setup-periphery.py
 python3 /tmp/setup-periphery.py
 systemctl enable --now periphery
-docker compose up -d
+docker compose -p komodo -f compose.yaml --env-file compose.env up -d
