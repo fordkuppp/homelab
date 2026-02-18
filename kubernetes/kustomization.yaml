@@ -3,5 +3,5 @@ kind: Kustomization
 resources:
   - immich.yaml
   - systems-install.yaml
-#  - systems.yaml
+  - systems.yaml
 
