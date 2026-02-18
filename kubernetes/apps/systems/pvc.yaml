@@ -1,10 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nfs-pvc
+  name: system-pvc
+  namespace: kube-system
 spec:
   storageClassName: nfs-csi
   accessModes: [ReadWriteOnce]
   resources:
     requests:
-      storage: 100Gi
+      storage: 10Gi
