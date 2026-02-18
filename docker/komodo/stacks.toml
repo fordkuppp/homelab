@@ -1,0 +1,6 @@
+[[stack]]
+name = "observability"
+[stack.config]
+server = "komodo-1"
+linked_repo = "homelab"
+run_directory = "docker/compose/observability"

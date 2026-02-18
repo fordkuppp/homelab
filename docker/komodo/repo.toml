@@ -1,0 +1,6 @@
+[[repo]]
+name = "homelab"
+[repo.config]
+server = "komodo-1"
+builder = "komodo-1"
+repo = "fordkuppp/homelab"
