@@ -10,6 +10,9 @@ spec:
     name: immich
   chart:
     spec:
+      sourceRef:
+        kind: OCIRepository
+        name: immich
       chart: immich
       version: 0.10.3
       interval: 5m
