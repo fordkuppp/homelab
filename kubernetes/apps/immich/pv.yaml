@@ -12,4 +12,20 @@ spec:
     volumeHandle: immich-pv
     volumeAttributes:
       server: 192.168.1.11
-      share: /mnt/general/data/immich
+      share: /mnt/general/data/immich/library
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-postgres-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-csi
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: immich-postgres-pv
+    volumeAttributes:
+      server: 192.168.1.11
+      share: /mnt/general/data/immich/postgres
