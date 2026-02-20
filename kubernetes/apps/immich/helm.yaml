@@ -25,6 +25,19 @@ spec:
       main:
         containers:
           main:
+          env:
+            DB_HOSTNAME: "postgres-rw.postgres.svc.cluster.local"
+            DB_USERNAME:
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: username
+            DB_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            DB_DATABASE_NAME: "immich"
             image:
               tag: v2.5.6
     immich:
