@@ -8,7 +8,7 @@ spec:
   storage:
     storageClass: nfs-csi-postgres
     size: 10Gi
-  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.9-0.4.3
+  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.12
   postgresql:
     shared_preload_libraries:
       - "vchord.so"
