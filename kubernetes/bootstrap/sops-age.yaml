@@ -1,0 +1,9 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: sops-age
+  namespace: flux-system
+data:
+  identity.agekey: >-
+    ${SOPS_AGE_KEY}
+type: Opaque
