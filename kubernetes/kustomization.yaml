@@ -4,4 +4,4 @@ resources:
   - immich.yaml
   - systems-install.yaml
   - systems.yaml
-
+  - sops.yaml
