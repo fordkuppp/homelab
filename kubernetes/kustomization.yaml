@@ -5,3 +5,4 @@ resources:
   - systems-install.yaml
   - systems.yaml
   - sops.yaml
+  - tailscale.yaml
