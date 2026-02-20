@@ -12,6 +12,10 @@ spec:
   postgresql:
     shared_preload_libraries:
       - "vchord.so"
+  securityContext:
+    runAsUser: 26
+    runAsGroup: 26
+    fsGroup: 26
   bootstrap:
     initdb:
       database: default
