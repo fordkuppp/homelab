@@ -15,6 +15,7 @@ spec:
   bootstrap:
     initdb:
       database: default
+      owner: admin
       secret:
         name: db-secret
       postInitApplicationSQL:
