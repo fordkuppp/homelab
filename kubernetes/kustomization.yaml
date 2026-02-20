@@ -6,3 +6,4 @@ resources:
   - systems.yaml
   - sops.yaml
   - tailscale.yaml
+  - postgres.yaml
