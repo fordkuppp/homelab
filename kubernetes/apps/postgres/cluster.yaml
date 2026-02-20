@@ -12,6 +12,13 @@ spec:
   postgresql:
     shared_preload_libraries:
       - "vchord.so"
+  managed:
+    roles:
+      - name: admin
+        ensure: present
+        login: true
+        passwordSecret:
+          name: db-secret
   bootstrap:
     initdb:
       database: default
