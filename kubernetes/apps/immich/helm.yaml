@@ -20,3 +20,7 @@ spec:
   chartRef:
     kind: OCIRepository
     name: immich
+  values:
+    persistence:
+      library:
+        existingClaim: immich-pvc
