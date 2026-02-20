@@ -6,15 +6,8 @@ metadata:
 spec:
   instances: 1
   storage:
-    storageClass: nfs-csi
+    storageClass: nfs-csi-postgres
     size: 10Gi
-    pvcTemplate:
-      accessModes:
-        - ReadWriteOnce
-      resources:
-        requests:
-          storage: 10Gi
-      storageClassName: nfs-csi-postgres
   imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.9-0.4.3
   postgresql:
     shared_preload_libraries:
