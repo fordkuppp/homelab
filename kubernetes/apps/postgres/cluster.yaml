@@ -17,6 +17,7 @@ spec:
       - name: admin
         ensure: present
         login: true
+        superuser: true
         passwordSecret:
           name: db-secret
   bootstrap:
