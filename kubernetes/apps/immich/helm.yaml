@@ -21,6 +21,16 @@ spec:
     kind: OCIRepository
     name: immich
   values:
-    persistence:
-      library:
-        existingClaim: immich-pvc
+    immich:
+      persistence:
+        library:
+          existingClaim: immich-pvc
+    server:
+      enabled: true
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: ghcr.io/immich-app/immich-server:v2.5.6
+                pullPolicy: IfNotPresent
