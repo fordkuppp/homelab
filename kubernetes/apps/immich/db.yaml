@@ -5,6 +5,8 @@ metadata:
   namespace: immich
 spec:
   instances: 1
+  postgresUID: 999
+  postgresGID: 999
   storage:
     pvcTemplate:
       accessModes:
