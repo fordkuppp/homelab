@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: sops
+  path: kubernetes/sops
   prune: true
   sourceRef:
     kind: GitRepository
