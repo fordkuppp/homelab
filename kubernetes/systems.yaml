@@ -13,3 +13,4 @@ spec:
   wait: true
   dependsOn:
     - name: systems-install
+    - name: external-secrets
