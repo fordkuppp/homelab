@@ -7,3 +7,5 @@ resources:
   - sops.yaml
   - tailscale.yaml
   - postgres.yaml
+  - cert-manager.yaml
+  - external-secrets.yaml

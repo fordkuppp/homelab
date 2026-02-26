@@ -1,15 +1,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: systems
+  name: cert-manager
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: kubernetes/apps/systems
+  path: kubernetes/apps/cert-manager
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
   wait: true
-  dependsOn:
-    - name: system-install
