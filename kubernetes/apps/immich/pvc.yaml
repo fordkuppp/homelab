@@ -4,22 +4,9 @@ metadata:
   name: immich-pvc
   namespace: immich
 spec:
-  accessModes: [ReadWriteMany]
+  accessModes: [ReadWriteOnce]
   storageClassName: nfs-csi
   resources:
     requests:
       storage: 100Gi
   volumeName: immich-pv
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: immich-postgres-pvc
-  namespace: immich
-spec:
-  accessModes: [ReadWriteOnce]
-  storageClassName: nfs-csi
-  resources:
-    requests:
-      storage: 10Gi
-  volumeName: immich-postgres-pv
