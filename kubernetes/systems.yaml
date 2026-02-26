@@ -14,3 +14,7 @@ spec:
   dependsOn:
     - name: systems-install
     - name: external-secrets
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: sops
