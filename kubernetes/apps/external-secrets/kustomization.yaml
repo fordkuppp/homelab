@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - cert.yaml
   - external-secrets.yaml
-  - secret-store.yaml
