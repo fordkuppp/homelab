@@ -5,6 +5,6 @@ metadata:
   namespace: postgres
 spec:
   name: immich
-  owner: admin
+  owner: ${postgres_user}
   cluster:
     name: postgres
