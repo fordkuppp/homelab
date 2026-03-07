@@ -33,28 +33,24 @@ spec:
         tailscale.com/hostname: coredns
     servers:
       - zones:
-          - zone: local.mydomain.me.
+          - zone: local.fordkuppp.me.
         port: 53
         plugins:
-          - name: file
-            parameters: /etc/coredns/local.mydomain.me.db
+          - name: etcd
+            parameters: local.fordkuppp.me
+            configBlock: |-
+              endpoint http://etcd.dns.svc.cluster.local:2379
           - name: log
           - name: errors
+          - name: cache
+            parameters: 30
       - zones:
           - zone: .
         port: 53
         plugins:
           - name: forward
-            parameters: . blocky.dns.svc.cluster.local
+            parameters: . 1.1.1.1 8.8.8.8
           - name: cache
             parameters: 30
           - name: log
           - name: errors
-    zoneFiles:
-      - filename: local.mydomain.me.db
-        domain: local.mydomain.me
-        contents: |
-          local.mydomain.me.   IN SOA  ns.local.mydomain.me. admin.local.mydomain.me. 2024010100 3600 600 86400 60
-          local.mydomain.me.   IN NS   ns.local.mydomain.me.
-          ; Add A records below pointing to the Gateway's Tailscale IP
-          ; Example: immich.local.mydomain.me.  IN  A  100.x.y.z
