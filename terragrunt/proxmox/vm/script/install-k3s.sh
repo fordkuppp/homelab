@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo "Disabling systemd-resolved to free port 53"
+systemctl disable --now systemd-resolved
+rm -f /etc/resolv.conf
+echo "nameserver 1.1.1.1" > /etc/resolv.conf
+
 echo "Installing k3s"
 curl -sfL https://get.k3s.io | sh -s - --disable servicelb --disable traefik --write-kubeconfig-mode=644
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

@@ -12,6 +12,7 @@
 
 ### Network infrastructure
 - `192.168.1.2–192.168.1.9`
+- `192.168.1.2` — Technitium DNS
 
 ### Homelab infrastructure (Proxmox, Truenas)
 - `192.168.1.10–192.168.1.19`
@@ -21,3 +22,6 @@
 
 ### Komodo docker
 - `192.168.1.30–192.168.1.39`
+
+### Metallb
+- `192.168.1.40–192.168.1.59`

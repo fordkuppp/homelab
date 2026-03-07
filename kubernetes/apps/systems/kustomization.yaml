@@ -4,3 +4,4 @@ resources:
   - storageclass.yaml
   - pvc.yaml
   - secret-store.yaml
+  - metallb.yaml
