@@ -54,3 +54,7 @@ spec:
             parameters: 30
           - name: log
           - name: errors
+          - name: health
+            configBlock: |-
+              lameduck 5s
+          - name: ready
