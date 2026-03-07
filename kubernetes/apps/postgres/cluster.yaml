@@ -14,7 +14,7 @@ spec:
       - "vchord.so"
   managed:
     roles:
-      - name: ${postgres_user}
+      - name: admin
         ensure: present
         login: true
         superuser: true
@@ -23,7 +23,7 @@ spec:
   bootstrap:
     initdb:
       database: default
-      owner: ${postgres_user}
+      owner: admin
       secret:
         name: db-secret
       postInitApplicationSQL:

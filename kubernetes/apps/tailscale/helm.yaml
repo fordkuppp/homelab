@@ -25,7 +25,4 @@ spec:
   install:
     remediation:
       retries: 3
-  values:
-    oauth:
-      clientId: ${tailscale_client_id}
-      clientSecret: ${tailscale_client_secret}
+  values: {}
