@@ -33,6 +33,7 @@ spec:
       - --rfc2136-tsig-axfr
       - --default-targets=192.168.1.3
       - --force-default-targets
+      - --txt-wildcard-replacement=wildcard
     env:
       - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
         valueFrom:
