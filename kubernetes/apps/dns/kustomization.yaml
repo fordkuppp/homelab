@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - etcd.yaml
-  - blocky.yaml
   - coredns.yaml
   - external-dns.yaml
