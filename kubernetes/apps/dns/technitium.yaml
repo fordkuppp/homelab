@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: technitium
+  namespace: dns
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: technitium
+  template:
+    metadata:
+      labels:
+        app: technitium
+    spec:
+      containers:
+        - name: technitium
+          image: technitium/dns-server:14.3.0
+          env:
+            - name: DNS_SERVER_DOMAIN
+              value: dns.local.fordkuppp.me
+            - name: DNS_SERVER_ENABLE_BLOCKING
+              value: "true"
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+            - name: web
+              containerPort: 5380
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dns
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: technitium-config
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: technitium-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-csi
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: technitium-pv
+    volumeAttributes:
+      server: 192.168.1.11
+      share: /mnt/general/data/technitium
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: technitium-config
+  namespace: dns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-csi
+  volumeName: technitium-pv
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-dns
+  namespace: dns
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    app: technitium
+  ports:
+    - name: dns-udp
+      port: 53
+      targetPort: 53
+      protocol: UDP
+    - name: dns-tcp
+      port: 53
+      targetPort: 53
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-web
+  namespace: dns
+spec:
+  type: ClusterIP
+  selector:
+    app: technitium
+  ports:
+    - name: http
+      port: 5380
+      targetPort: 5380
+      protocol: TCP
