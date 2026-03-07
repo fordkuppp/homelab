@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - secrets.yaml
   - external-dns.yaml
+  - technitium.yaml
