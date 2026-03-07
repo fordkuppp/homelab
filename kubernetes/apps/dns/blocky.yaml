@@ -33,10 +33,7 @@ spec:
             port: 4000
       dns:
         enabled: true
-        type: LoadBalancer
-        loadBalancerClass: tailscale
-        annotations:
-          tailscale.com/hostname: blocky
+        externalTrafficPolicy: ""
         ports:
           dns-tcp:
             enabled: true
