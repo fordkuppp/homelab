@@ -49,7 +49,7 @@ spec:
         port: 53
         plugins:
           - name: forward
-            parameters: . 1.1.1.1 8.8.8.8
+            parameters: . dns://blocky-dns.dns.svc.cluster.local
           - name: cache
             parameters: 30
           - name: log
