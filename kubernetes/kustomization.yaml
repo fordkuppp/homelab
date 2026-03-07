@@ -13,3 +13,4 @@ resources:
   - dns.yaml
   - gateway.yaml
   - observability.yaml
+  - uptime-kuma.yaml
