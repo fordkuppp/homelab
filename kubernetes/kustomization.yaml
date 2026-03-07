@@ -12,3 +12,4 @@ resources:
   - envoy-gateway.yaml
   - dns.yaml
   - gateway.yaml
+  - observability.yaml
