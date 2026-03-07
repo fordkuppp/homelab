@@ -13,6 +13,7 @@
 ### Network infrastructure
 - `192.168.1.2–192.168.1.9`
 - `192.168.1.2` — Technitium DNS
+- `192.168.1.3` — Envoy Gateway (LAN)
 
 ### Homelab infrastructure (Proxmox, Truenas)
 - `192.168.1.10–192.168.1.19`
