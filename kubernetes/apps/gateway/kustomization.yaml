@@ -6,3 +6,4 @@ resources:
   - envoyproxy.yaml
   - gateway.yaml
   - http-to-https.yaml
+  - lan-service.yaml
