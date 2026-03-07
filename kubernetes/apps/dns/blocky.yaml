@@ -26,6 +26,11 @@ spec:
       retries: 3
   values:
     service:
+      main:
+        enabled: true
+        ports:
+          http:
+            port: 4000
       dns:
         enabled: true
         type: LoadBalancer
@@ -44,17 +49,19 @@ spec:
             protocol: UDP
             targetPort: 53
     config: |
-      upstream:
-        default:
-          - 1.1.1.1
-          - 8.8.8.8
+      upstreams:
+        groups:
+          default:
+            - 1.1.1.1
+            - 8.8.8.8
       blocking:
-        blackLists:
+        denylists:
           ads:
             - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
         clientGroupsBlock:
           default:
             - ads
-      port: 53
-      httpPort: 4000
+      ports:
+        dns: 53
+        http: 4000
       bootstrapDns: tcp+udp:1.1.1.1
