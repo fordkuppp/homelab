@@ -19,8 +19,9 @@ inputs = {
   vm_name = "k3s-1"
   vm_id   = 1100
 
-  cpu_cores = 4
-  memory    = 24576
+  cpu_cores    = 4
+  memory       = 24576
+  disk_size_gb = 64
 
   cloud_image_id = dependency.ubuntu_image.outputs.file_id
 
