@@ -11,7 +11,7 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: "*.local.mydomain.me"
+      hostname: "*.local.fordkuppp.me"
       tls:
         mode: Terminate
         certificateRefs:
@@ -22,7 +22,7 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      hostname: "*.local.mydomain.me"
+      hostname: "*.local.fordkuppp.me"
       allowedRoutes:
         namespaces:
           from: All

@@ -1,0 +1,37 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: external-dns
+  namespace: dns
+spec:
+  interval: 1h
+  url: https://kubernetes-sigs.github.io/external-dns/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: dns
+spec:
+  interval: 5m0s
+  chart:
+    spec:
+      chart: external-dns
+      version: "1.*"
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+  install:
+    remediation:
+      retries: 3
+  values:
+    provider:
+      name: coredns
+    sources:
+      - gateway-httproute
+    domainFilters:
+      - local.fordkuppp.me
+    policy: sync
+    env:
+      - name: ETCD_URLS
+        value: http://etcd.dns.svc.cluster.local:2379
