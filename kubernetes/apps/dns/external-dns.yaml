@@ -26,12 +26,15 @@ spec:
       retries: 3
   values:
     provider:
-      name: coredns
+      name: cloudflare
     sources:
       - gateway-httproute
     domainFilters:
       - local.fordkuppp.me
     policy: sync
     env:
-      - name: ETCD_URLS
-        value: http://etcd.dns.svc.cluster.local:2379
+      - name: CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: cloudflare-api-token
+            key: api-token
