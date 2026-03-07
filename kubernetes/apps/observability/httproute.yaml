@@ -24,7 +24,7 @@ spec:
     - name: tailscale-gateway
       namespace: tailscale
   hostnames:
-    - "otel.local.fordkuppp.me"
+    - "otel-grpc.local.fordkuppp.me"
   rules:
     - backendRefs:
         - name: opentelemetry-collector
@@ -40,7 +40,7 @@ spec:
     - name: tailscale-gateway
       namespace: tailscale
   hostnames:
-    - "otel.local.fordkuppp.me"
+    - "otel-http.local.fordkuppp.me"
   rules:
     - backendRefs:
         - name: opentelemetry-collector

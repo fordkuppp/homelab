@@ -28,6 +28,10 @@ spec:
   values:
     grafana:
       defaultDashboardsTimezone: Asia/Bangkok
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          url: http://loki.observability.svc:3100
       service:
         type: ClusterIP
     prometheus:

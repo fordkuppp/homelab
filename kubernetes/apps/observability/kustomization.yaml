@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pv.yaml
-  - helm.yaml
+  - prom-stack.yaml
+  - loki.yaml
   - otel-collector.yaml
   - httproute.yaml

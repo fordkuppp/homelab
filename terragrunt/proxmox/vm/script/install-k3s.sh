@@ -5,6 +5,11 @@ systemctl disable --now systemd-resolved
 rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
 
+echo "Increasing inotify limits"
+echo 'fs.inotify.max_user_instances=512' >> /etc/sysctl.d/99-inotify.conf
+echo 'fs.inotify.max_user_watches=524288' >> /etc/sysctl.d/99-inotify.conf
+sysctl --system
+
 echo "Installing k3s"
 curl -sfL https://get.k3s.io | sh -s - --disable servicelb --disable traefik --write-kubeconfig-mode=644
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
