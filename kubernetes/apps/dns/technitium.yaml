@@ -84,6 +84,9 @@ kind: Service
 metadata:
   name: technitium-dns
   namespace: dns
+  annotations:
+    metallb.universe.tf/address-pool: network-infra
+    metallb.universe.tf/loadBalancerIPs: 192.168.1.2
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
