@@ -1,0 +1,28 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: tailscale-gateway
+  namespace: tailscale
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-dns
+spec:
+  gatewayClassName: tailscale-envoy
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.local.mydomain.me"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-local-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.local.mydomain.me"
+      allowedRoutes:
+        namespaces:
+          from: All

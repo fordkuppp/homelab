@@ -9,3 +9,6 @@ resources:
   - postgres.yaml
   - cert-manager.yaml
   - external-secrets.yaml
+  - envoy-gateway.yaml
+  - dns.yaml
+  - gateway.yaml
