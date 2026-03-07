@@ -30,7 +30,7 @@ spec:
     sources:
       - gateway-httproute
     domainFilters:
-      - local.fordkuppp.me
+      - fordkuppp.me
     policy: sync
     env:
       - name: CF_API_TOKEN
