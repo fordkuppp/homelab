@@ -126,12 +126,18 @@ spec:
             - mountPath: /app/config/widgets.yaml
               name: homepage-config
               subPath: widgets.yaml
+            - mountPath: /app/config/proxmox.yaml
+              name: homepage-proxmox
+              subPath: proxmox.yaml
             - mountPath: /app/config/logs
               name: logs
       volumes:
         - name: homepage-config
           configMap:
             name: homepage
+        - name: homepage-proxmox
+          secret:
+            secretName: homepage-proxmox
         - name: logs
           emptyDir: {}
 ---
