@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - cert-manager.yaml
+  - dns.yaml
+  - envoy-gateway.yaml
+  - external-secrets.yaml
+  - gateway.yaml
+  - homepage.yaml
+  - immich.yaml
+  - observability.yaml
+  - postgres.yaml
+  - sops.yaml
+  - syncthing.yaml
+  - systems-install.yaml
+  - systems.yaml
+  - tailscale.yaml
+  - uptime-kuma.yaml
