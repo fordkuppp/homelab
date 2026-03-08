@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  namespace: homepage
+data:
+  custom.js: ""
+  custom.css: ""
+  bookmarks.yaml: |
+    []
+  services.yaml: |
+    - Infrastructure:
+        - Proxmox:
+            icon: proxmox
+            href: https://192.168.1.10:8006
+            description: Hypervisor
+        - Technitium:
+            icon: technitium
+            href: https://dns.local.fordkuppp.me
+            description: DNS Server
+    - Monitoring:
+        - Grafana:
+            icon: grafana
+            href: https://grafana.local.fordkuppp.me
+            description: Dashboards
+        - Uptime Kuma:
+            icon: uptime-kuma
+            href: https://uptime.local.fordkuppp.me
+            description: Status monitoring
+    - Apps:
+        - Immich:
+            icon: immich
+            href: https://immich.local.fordkuppp.me
+            description: Photo management
+  widgets.yaml: |
+    - search:
+        provider: google
+        target: _blank
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+  kubernetes.yaml: |
+    mode: cluster
+  docker.yaml: |
+    []
+  settings.yaml: |
+    title: Homelab
+    background:
+      opacity: 50
+    theme: dark
+    color: slate
