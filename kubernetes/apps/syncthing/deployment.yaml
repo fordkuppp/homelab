@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syncthing
+  namespace: syncthing
+  labels:
+    app.kubernetes.io/name: syncthing
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: syncthing
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: syncthing
+    spec:
+      containers:
+        - name: syncthing
+          image: syncthing/syncthing:2
+          ports:
+            - name: http
+              containerPort: 8384
+              protocol: TCP
+            - name: sync
+              containerPort: 22000
+              protocol: TCP
+            - name: discovery
+              containerPort: 21027
+              protocol: UDP
+          volumeMounts:
+            - name: data
+              mountPath: /var/syncthing
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: syncthing-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing
+  namespace: syncthing
+spec:
+  selector:
+    app.kubernetes.io/name: syncthing
+  ports:
+    - name: http
+      port: 8384
+      targetPort: http
+    - name: sync
+      port: 22000
+      targetPort: sync
+      protocol: TCP
+    - name: discovery
+      port: 21027
+      targetPort: discovery
+      protocol: UDP
