@@ -32,6 +32,10 @@ data:
             icon: immich
             href: https://immich.local.fordkuppp.me
             description: Photo management
+        - Syncthing:
+            icon: syncthing
+            href: https://sync.local.fordkuppp.me
+            description: File synchronization
   widgets.yaml: |
     - search:
         provider: google
