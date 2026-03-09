@@ -31,3 +31,19 @@ spec:
       media:
         enabled: true
         existingClaim: jellyfin-media-pvc
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    securityContext:
+      privileged: true
+    resources:
+      limits:
+        gpu.intel.com/i915: 1
+    extraVolumes:
+      - name: dri
+        hostPath:
+          path: /dev/dri
+    extraVolumeMounts:
+      - name: dri
+        mountPath: /dev/dri
