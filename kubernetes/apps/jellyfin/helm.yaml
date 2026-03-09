@@ -1,0 +1,33 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+spec:
+  interval: 1h
+  url: https://jellyfin.github.io/jellyfin-helm
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+spec:
+  interval: 5m0s
+  install:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: jellyfin
+      sourceRef:
+        kind: HelmRepository
+        name: jellyfin
+  values:
+    persistence:
+      config:
+        enabled: true
+        existingClaim: jellyfin-config-pvc
+      media:
+        enabled: true
+        existingClaim: jellyfin-media-pvc
