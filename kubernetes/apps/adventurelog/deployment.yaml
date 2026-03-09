@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adventurelog-db
+  namespace: adventurelog
+  labels:
+    app.kubernetes.io/name: adventurelog-db
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: adventurelog-db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adventurelog-db
+    spec:
+      containers:
+        - name: postgis
+          image: postgis/postgis:15-3.3
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: adventurelog
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_USER
+              value: adventurelog
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: adventurelog-secret
+                  key: postgres-password
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: adventurelog-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adventurelog-db
+  namespace: adventurelog
+spec:
+  selector:
+    app.kubernetes.io/name: adventurelog-db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adventurelog
+  namespace: adventurelog
+  labels:
+    app.kubernetes.io/name: adventurelog
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: adventurelog
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adventurelog
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/seanmorley15/adventurelog-backend:latest
+          ports:
+            - name: api
+              containerPort: 80
+          env:
+            - name: PGHOST
+              value: adventurelog-db
+            - name: PGDATABASE
+              value: adventurelog
+            - name: PGUSER
+              value: adventurelog
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: adventurelog-secret
+                  key: postgres-password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: adventurelog-secret
+                  key: django-secret-key
+            - name: PUBLIC_URL
+              value: "https://adventure.local.fordkuppp.me"
+            - name: FRONTEND_URL
+              value: "https://adventure.local.fordkuppp.me"
+            - name: CSRF_TRUSTED_ORIGINS
+              value: "https://adventure.local.fordkuppp.me"
+            - name: DJANGO_ADMIN_USERNAME
+              value: admin
+            - name: DJANGO_ADMIN_PASSWORD
+              value: admin
+            - name: DJANGO_ADMIN_EMAIL
+              value: admin@example.com
+            - name: DEBUG
+              value: "False"
+          volumeMounts:
+            - name: media
+              mountPath: /code/media
+        - name: frontend
+          image: ghcr.io/seanmorley15/adventurelog-frontend:latest
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PUBLIC_SERVER_URL
+              value: "http://localhost:80"
+            - name: ORIGIN
+              value: "https://adventure.local.fordkuppp.me"
+            - name: BODY_SIZE_LIMIT
+              value: "Infinity"
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: adventurelog-media-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adventurelog
+  namespace: adventurelog
+spec:
+  selector:
+    app.kubernetes.io/name: adventurelog
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
