@@ -28,7 +28,13 @@ spec:
   values:
     image:
       repository: otel/opentelemetry-collector-contrib
-    mode: deployment
+    mode: daemonset
+    presets:
+      logsCollection:
+        enabled: true
+    service:
+      enabled: true
+      type: ClusterIP
     config:
       receivers:
         otlp:
@@ -51,6 +57,6 @@ spec:
             processors: [batch]
             exporters: [prometheusremotewrite]
           logs:
-            receivers: [otlp]
+            receivers: [otlp, filelog]
             processors: [batch]
             exporters: [otlphttp/loki]
