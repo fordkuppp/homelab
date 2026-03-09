@@ -8,6 +8,7 @@ resources:
   - gateway.yaml
   - homepage.yaml
   - immich.yaml
+  - jellyfin.yaml
   - observability.yaml
   - postgres.yaml
   - sops.yaml
