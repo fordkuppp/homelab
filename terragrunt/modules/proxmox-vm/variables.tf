@@ -89,3 +89,12 @@ variable "tags" {
   description = "Tags for the VM (e.g., ['k3s', 'worker'])"
   default     = []
 }
+
+variable "pci_devices" {
+  type = list(object({
+    mapping = string
+    pcie    = optional(bool, true)
+  }))
+  description = "PCI devices to passthrough to the VM via resource mappings"
+  default     = []
+}
