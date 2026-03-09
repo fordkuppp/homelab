@@ -30,4 +30,11 @@ inputs = {
   ssh_public_key = local.secrets.proxmox.ssh.default.public_key
 
   user_data = file("../script/install-k3s.sh")
+
+  pci_devices = [
+    {
+      mapping = "intel-igpu" // Mapping created manually through proxmox UI (Datacenter -> Resource Mapping -> Add PCI Devices)
+      pcie    = true
+    }
+  ]
 }

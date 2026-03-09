@@ -2,6 +2,11 @@ resource "proxmox_virtual_environment_file" "cloudinit_file" {
   content_type = "snippets"
   datastore_id = "local"
   node_name    = var.node_name
+
+  lifecycle {
+    ignore_changes = [source_raw]
+  }
+
   source_raw {
     file_name = "${var.vm_name}-config.yaml"
     data      = <<-EOF
@@ -70,6 +75,8 @@ resource "proxmox_virtual_environment_vm" "vm" {
   node_name = var.node_name
   vm_id     = var.vm_id
 
+  machine = length(var.pci_devices) > 0 ? "q35" : null
+
   agent {
     enabled = true
   }
@@ -111,6 +118,22 @@ resource "proxmox_virtual_environment_vm" "vm" {
     file_id      = var.cloud_image_id
     interface = "scsi0"
     size = var.disk_size_gb
+  }
+
+  dynamic "hostpci" {
+    for_each = var.pci_devices
+    content {
+      device  = "hostpci${hostpci.key}"
+      mapping = hostpci.value.mapping
+      pcie    = hostpci.value.pcie
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      initialization[0].user_data_file_id,
+      initialization[0].meta_data_file_id,
+    ]
   }
 
   on_boot = var.on_boot

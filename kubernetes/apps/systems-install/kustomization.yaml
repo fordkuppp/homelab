@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - nfs-csi.yaml
   - metallb.yaml
+  - intel-device-plugins.yaml
