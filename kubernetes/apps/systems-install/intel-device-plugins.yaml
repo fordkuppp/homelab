@@ -7,12 +7,39 @@ spec:
   interval: 1h
   url: https://intel.github.io/helm-charts
 ---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: node-feature-discovery
+  namespace: kube-system
+spec:
+  interval: 1h
+  url: oci://registry.k8s.io/nfd/charts/node-feature-discovery
+  ref:
+    tag: 0.18.3
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: node-feature-discovery
+  namespace: kube-system
+spec:
+  interval: 5m0s
+  install:
+    remediation:
+      retries: 3
+  chartRef:
+    kind: OCIRepository
+    name: node-feature-discovery
+---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: intel-device-plugins-operator
   namespace: kube-system
 spec:
+  dependsOn:
+    - name: node-feature-discovery
   interval: 5m0s
   install:
     remediation:
@@ -32,6 +59,7 @@ metadata:
 spec:
   dependsOn:
     - name: intel-device-plugins-operator
+    - name: node-feature-discovery
   interval: 5m0s
   install:
     remediation:
@@ -43,4 +71,4 @@ spec:
         kind: HelmRepository
         name: intel-device-plugins
   values:
-    nodeFeatureRule: false
+    nodeFeatureRule: true
