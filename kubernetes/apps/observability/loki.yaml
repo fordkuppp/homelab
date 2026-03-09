@@ -62,5 +62,7 @@ spec:
       replicas: 0
     backend:
       replicas: 0
+    test:
+      enabled: false
     lokiCanary:
       enabled: false
