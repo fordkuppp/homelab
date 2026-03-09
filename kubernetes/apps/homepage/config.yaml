@@ -32,6 +32,10 @@ data:
             icon: immich
             href: https://immich.local.fordkuppp.me
             description: Photo management
+        - Jellyfin:
+            icon: jellyfin
+            href: https://jellyfin.local.fordkuppp.me
+            description: Media server
         - Syncthing:
             icon: syncthing
             href: https://sync.local.fordkuppp.me
