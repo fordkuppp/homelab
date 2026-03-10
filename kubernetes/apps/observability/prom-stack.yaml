@@ -27,6 +27,9 @@ spec:
         name: prometheus-community
   values:
     grafana:
+      grafana.ini:  
+        server:
+          root_url: "https://grafana.local.fordkuppp.me"
       defaultDashboardsTimezone: Asia/Bangkok
       additionalDataSources:
         - name: Loki
