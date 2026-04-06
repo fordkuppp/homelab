@@ -20,8 +20,9 @@ spec:
       containers:
         - name: metrics-exporter
           image: ghcr.io/fordkuppp/metrics-exporter:latest
+          imagePullPolicy: Always
           env:
-            - name: APP_STEAM_API_KEY
+            - name: APP_STEAM__API_KEY
               valueFrom:
                 secretKeyRef:
                   name: metrics-exporter-steam
