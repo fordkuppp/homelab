@@ -40,7 +40,7 @@ spec:
     prometheus:
       prometheusSpec:
         enableRemoteWriteReceiver: true
-        retention: 7d
+        retention: 90d
         storageSpec:
           volumeClaimTemplate:
             spec:
@@ -49,7 +49,7 @@ spec:
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 60Gi
               selector:
                 matchLabels:
                   app: prometheus
