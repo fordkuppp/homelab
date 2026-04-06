@@ -35,24 +35,13 @@ spec:
         - name: Loki
           type: loki
           url: http://loki.observability.svc:3100
+        - name: Mimir
+          type: prometheus
+          url: http://mimir-query-frontend.observability.svc:8080/prometheus
+          isDefault: true
       service:
         type: ClusterIP
     prometheus:
-      prometheusSpec:
-        enableRemoteWriteReceiver: true
-        retention: 7d
-        storageSpec:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: nfs-csi
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 10Gi
-              selector:
-                matchLabels:
-                  app: prometheus
-
+      enabled: false
     alertmanager:
       enabled: false
