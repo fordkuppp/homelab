@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: metrics-exporter
-          image: ghcr.io/fordkuppp/steam-metrics:latest
+          image: ghcr.io/fordkuppp/metrics-exporter:latest
           env:
             - name: APP_STEAM_API_KEY
               valueFrom:
