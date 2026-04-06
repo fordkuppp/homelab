@@ -1,0 +1,67 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mimir
+  namespace: observability
+spec:
+  interval: 5m0s
+  install:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: mimir-distributed
+      version: 5.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+  values:
+    ingester:
+      replicas: 1
+      zoneAwareReplication:
+        enabled: false
+    store_gateway:
+      zoneAwareReplication:
+        enabled: false
+    alertmanager:
+      replicas: 1
+    compactor:
+      replicas: 1
+    distributor:
+      replicas: 1
+    querier:
+      replicas: 1
+    query_frontend:
+      replicas: 1
+    query_scheduler:
+      replicas: 1
+    ruler:
+      replicas: 1
+    overrides_exporter:
+      replicas: 1
+    minio:
+      buckets:
+        - name: mimir-tsdb
+          policy: none
+          purge: false
+          versioning: false
+        - name: mimir-ruler
+          policy: none
+          purge: false
+          versioning: false
+      persistence:
+        storageClass: nfs-csi
+        size: 10Gi
+        volumeName: mimir-pv
+    rollout_operator:
+      enabled: false
+    chunks-cache:
+      enabled: false
+    index-cache:
+      enabled: false
+    metadata-cache:
+      enabled: false
+    results-cache:
+      enabled: false
+    nginx:
+      enabled: false
