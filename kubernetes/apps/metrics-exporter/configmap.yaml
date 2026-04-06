@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metrics-exporter-config
+  namespace: metrics-exporter
+data:
+  local.toml: |
+    [steam]
+    polling_interval_seconds = 30
+    steam_ids = ["76561198119777005"]
+
+    [otlp_config]
+    collector_endpoint = "http://opentelemetry-collector.observability.svc.cluster.local:4317"
+    protocol = "tonic"
