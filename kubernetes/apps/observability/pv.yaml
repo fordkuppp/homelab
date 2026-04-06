@@ -6,7 +6,7 @@ metadata:
     app: prometheus
 spec:
   capacity:
-    storage: 10Gi
+    storage: 60Gi
   accessModes: [ReadWriteOnce]
   storageClassName: nfs-csi
   csi:
