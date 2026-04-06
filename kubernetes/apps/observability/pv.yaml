@@ -33,21 +33,3 @@ spec:
     volumeAttributes:
       server: 192.168.1.11
       share: /mnt/general/data/observability/loki
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: mimir-pv
-  labels:
-    app: mimir
-spec:
-  capacity:
-    storage: 10Gi
-  accessModes: [ReadWriteOnce]
-  storageClassName: nfs-csi
-  csi:
-    driver: nfs.csi.k8s.io
-    volumeHandle: mimir-pv
-    volumeAttributes:
-      server: 192.168.1.11
-      share: /mnt/general/data/observability/mimir

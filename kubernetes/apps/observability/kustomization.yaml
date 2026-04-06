@@ -5,6 +5,5 @@ resources:
   - pv.yaml
   - prom-stack.yaml
   - loki.yaml
-  - mimir.yaml
   - otel-collector.yaml
   - httproute.yaml
