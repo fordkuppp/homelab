@@ -19,6 +19,24 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
+  name: grafana-pv
+  labels:
+    app: grafana
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-csi
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: grafana-pv
+    volumeAttributes:
+      server: 192.168.1.11
+      share: /mnt/general/data/observability/grafana
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
   name: loki-pv
   labels:
     app: loki

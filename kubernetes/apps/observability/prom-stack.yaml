@@ -39,6 +39,12 @@ spec:
         - name: Loki
           type: loki
           url: http://loki.observability.svc:3100
+      persistence:
+        enabled: true
+        storageClassName: nfs-csi
+        size: 5Gi
+        selectorLabels:
+          app: grafana
       service:
         type: ClusterIP
     prometheus:
