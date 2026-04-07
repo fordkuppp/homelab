@@ -27,9 +27,13 @@ spec:
         name: prometheus-community
   values:
     grafana:
-      grafana.ini:  
+      grafana.ini:
         server:
           domain: "grafana.local.fordkuppp.me"
+      sidecar:
+        dashboards:
+          provider:
+            folder: "Built in"
       defaultDashboardsTimezone: Asia/Bangkok
       additionalDataSources:
         - name: Loki
