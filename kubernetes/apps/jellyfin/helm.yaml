@@ -24,6 +24,8 @@ spec:
         kind: HelmRepository
         name: jellyfin
   values:
+    deploymentStrategy:
+      type: Recreate
     persistence:
       config:
         enabled: true
