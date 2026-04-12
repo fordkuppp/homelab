@@ -5,6 +5,7 @@ resources:
   - dns.yaml
   - envoy-gateway.yaml
   - external-secrets.yaml
+  - flux-noti.yaml
   - gateway.yaml
   - homepage.yaml
   - immich.yaml
