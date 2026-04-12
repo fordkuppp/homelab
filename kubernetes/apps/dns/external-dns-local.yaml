@@ -20,6 +20,7 @@ spec:
       name: rfc2136
     sources:
       - gateway-httproute
+      - crd
     domainFilters:
       - local.fordkuppp.me
     policy: sync

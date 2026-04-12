@@ -29,6 +29,7 @@ spec:
       name: cloudflare
     sources:
       - gateway-httproute
+      - crd
     domainFilters:
       - fordkuppp.me
     policy: sync
