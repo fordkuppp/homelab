@@ -1,5 +1,12 @@
 #!/bin/bash
 
+echo "Disabling unattended-upgrades"
+systemctl disable --now unattended-upgrades
+apt remove -y unattended-upgrades
+
+echo "Adding hostname to /etc/hosts"
+echo "127.0.1.1 $(hostname)" >> /etc/hosts
+
 echo "Disabling systemd-resolved to free port 53"
 systemctl disable --now systemd-resolved
 rm -f /etc/resolv.conf
