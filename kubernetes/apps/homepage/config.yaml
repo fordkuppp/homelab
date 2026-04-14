@@ -14,6 +14,10 @@ data:
             icon: proxmox
             href: https://192.168.1.10:8006
             description: Hypervisor
+        - Truenas:
+            icon: truenas
+            href: https://192.168.1.11:443
+            description: NAS
         - Technitium:
             icon: technitium
             href: https://dns.local.fordkuppp.me
@@ -36,10 +40,6 @@ data:
             icon: jellyfin
             href: https://jellyfin.local.fordkuppp.me
             description: Media server
-        - AdventureLog:
-            icon: adventurelog
-            href: https://adventure.local.fordkuppp.me
-            description: Travel journal
         - Syncthing:
             icon: syncthing
             href: https://sync.local.fordkuppp.me
