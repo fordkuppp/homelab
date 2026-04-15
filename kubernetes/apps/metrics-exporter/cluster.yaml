@@ -1,0 +1,37 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: timescaledb
+  namespace: metrics-exporter
+spec:
+  instances: 1
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    kind: ImageCatalog
+    name: timescaledb
+    major: 18
+  imagePullPolicy: IfNotPresent
+  postgresUID: 1000
+  postgresGID: 1000
+  storage:
+    storageClass: nfs-csi-timescaledb
+    size: 100Gi
+  postgresql:
+    shared_preload_libraries:
+      - "timescaledb"
+  managed:
+    roles:
+      - name: admin
+        ensure: present
+        login: true
+        superuser: true
+        passwordSecret:
+          name: timescaledb-secret
+  bootstrap:
+    initdb:
+      database: admin
+      owner: admin
+      secret:
+        name: timescaledb-secret
+      postInitTemplateSQL:
+        - CREATE EXTENSION IF NOT EXISTS timescaledb;
