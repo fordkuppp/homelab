@@ -14,8 +14,14 @@ spec:
   postgresUID: 1000
   postgresGID: 1000
   storage:
-    storageClass: nfs-csi-timescaledb
     size: 100Gi
+    pvcTemplate:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 100Gi
+      storageClassName: nfs-csi
+      volumeName: timescaledb-pv
   postgresql:
     shared_preload_libraries:
       - "timescaledb"
