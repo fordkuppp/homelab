@@ -14,3 +14,4 @@ spec:
   dependsOn:
     - name: systems
     - name: observability
+    - name: postgres

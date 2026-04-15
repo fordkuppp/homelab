@@ -1,0 +1,9 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  name: timescaledb
+  namespace: metrics-exporter
+spec:
+  images:
+    - major: 18
+      image: timescale/timescaledb-ha:pg18
