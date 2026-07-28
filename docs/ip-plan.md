@@ -4,7 +4,8 @@
 
 - LAN subnet: `192.168.1.0/24`
 - Gateway/router: `192.168.1.1`
-- DHCP range (router-managed): `192.168.1.100–192.168.1.200`
+- DHCP range (router-managed): `192.168.1.60–192.168.1.200`
+  - Pool starts at `.60` (rather than `.100`) because the current router only allows reservations inside the DHCP pool (fk you ais)
 
 ## Reserved Ranges (Static)
 
