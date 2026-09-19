@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secrets.yaml
-  - external-dns.yaml
+  - helmrepository.yaml
   - external-dns-local.yaml
   - technitium.yaml

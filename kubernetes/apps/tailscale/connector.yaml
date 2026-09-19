@@ -1,0 +1,19 @@
+# Subnet router: makes the LAN-only gateway address reachable from off-LAN, so
+# *.local.fordkuppp.me can resolve to 192.168.1.3 everywhere instead of being
+# split between a public (100.x) and a LAN answer.
+#
+# /32s on purpose, not 192.168.1.0/24 -- a /24 advertisement hijacks the whole
+# range on every foreign network that also uses 192.168.1.0/24 (hotels, cafes).
+#
+# Routes need approval: either in the admin console, or via an autoApprovers
+# entry for tag:k8s in the tailnet policy file.
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: homelab-subnet
+spec:
+  hostname: homelab-subnet-router
+  subnetRouter:
+    advertiseRoutes:
+      - "192.168.1.3/32" # Envoy Gateway (LAN)
+      - "192.168.1.2/32" # Technitium DNS
