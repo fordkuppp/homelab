@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+  labels:
+    app.kubernetes.io/name: pocket-id
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pocket-id
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pocket-id
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: pocket-id
+          image: ghcr.io/pocket-id/pocket-id:v2.14.0
+          env:
+            - name: APP_URL
+              value: https://id.local.fordkuppp.me
+            - name: TRUST_PROXY
+              value: "true"
+            - name: ALLOW_INSECURE_CALLBACK_URLS
+              value: "false"
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: pocket-id
+                  key: encryption_key
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: connection_string
+          ports:
+            - name: http
+              containerPort: 1411
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pocket-id-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+spec:
+  selector:
+    app.kubernetes.io/name: pocket-id
+  ports:
+    - name: http
+      port: 1411
+      targetPort: http
