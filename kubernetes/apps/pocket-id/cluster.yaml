@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pocket-id-postgres
+  namespace: pocket-id
+spec:
+  instances: 1
+  storage:
+    pvcTemplate:
+      accessModes: [ReadWriteOnce]
+      storageClassName: nfs-csi
+      volumeName: pocket-id-postgres-pv
+      resources:
+        requests:
+          storage: 5Gi
+  bootstrap:
+    initdb:
+      database: pocketid
+      owner: pocketid
+      secret:
+        name: db-secret
