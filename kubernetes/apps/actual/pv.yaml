@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: actual-pv
+  labels:
+    app: actual
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-csi
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: actual-pv
+    volumeAttributes:
+      server: 192.168.1.11
+      share: /mnt/general/data/actual
