@@ -32,6 +32,10 @@ data:
             href: https://uptime.local.fordkuppp.me
             description: Status monitoring
     - Apps:
+        - Actual Budget:
+            icon: actual-budget
+            href: https://budget.local.fordkuppp.me
+            description: Budgeting
         - Immich:
             icon: immich
             href: https://immich.local.fordkuppp.me
