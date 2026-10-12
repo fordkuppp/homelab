@@ -1,0 +1,41 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install kustomize and kubeconform
+        run: |
+          set -euo pipefail
+          curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.3/kustomize_v5.8.3_linux_amd64.tar.gz \
+            | sudo tar xz -C /usr/local/bin kustomize
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | sudo tar xz -C /usr/local/bin kubeconform
+
+      - name: Build and validate every kustomization
+        run: |
+          set -uo pipefail
+          fail=0
+          for d in kubernetes/apps/*/ kubernetes/flux/; do
+            printf '\n=== %s ===\n' "$d"
+            if ! kustomize build "$d" > /tmp/build.yaml 2>/tmp/err.txt; then
+              echo "BUILD FAILED"; cat /tmp/err.txt; fail=1; continue
+            fi
+            kubeconform \
+              -strict \
+              -ignore-missing-schemas \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              -summary /tmp/build.yaml || fail=1
+          done
+          exit $fail

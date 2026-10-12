@@ -6,11 +6,15 @@
     ":semanticCommitsDisabled"
   ],
   "timezone": "Asia/Bangkok",
-  "schedule": ["before 6am on monday"],
+  "schedule": [
+    "before 6am on monday"
+  ],
   "prConcurrentLimit": 5,
   "prHourlyLimit": 0,
   "rebaseWhen": "conflicted",
-  "labels": ["renovate"],
+  "labels": [
+    "renovate"
+  ],
   "osvVulnerabilityAlerts": true,
   "ignorePaths": [
     "**/.terragrunt-cache/**",
@@ -19,19 +23,30 @@
     "scratchpad/**"
   ],
   "flux": {
-    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
+    "managerFilePatterns": [
+      "/^kubernetes/.+\\.ya?ml$/"
+    ]
   },
   "kubernetes": {
-    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
+    "managerFilePatterns": [
+      "/^kubernetes/.+\\.ya?ml$/"
+    ]
   },
   "docker-compose": {
-    "managerFilePatterns": ["/^docker/compose/.+\\.ya?ml$/"]
+    "managerFilePatterns": [
+      "/^docker/compose/.+\\.ya?ml$/"
+    ]
   },
   "packageRules": [
     {
       "description": "Batch the *arr stack into one PR; they are upgraded together in practice",
-      "matchPackageNames": ["lscr.io/linuxserver/**"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": [
+        "lscr.io/linuxserver/**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "arr stack"
     },
     {
@@ -41,18 +56,60 @@
         "otel/**",
         "ghcr.io/prometheus/**"
       ],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "observability"
     },
     {
       "description": "Major bumps always get their own PR and a changelog read",
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "minimumReleaseAge": "3 days"
     },
     {
       "description": "Let a release settle before proposing it",
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Patch, pin and digest updates merge themselves once validate passes",
+      "matchUpdateTypes": [
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Minor updates automerge too",
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "The *arr apps and Jellyfin migrate their SQLite databases on upgrade and the migration is not reversible. Their config PVCs are on local-path with no backup, so a bad upgrade means rebuilding config by hand. Keep a human on anything beyond a patch.",
+      "matchPackageNames": [
+        "lscr.io/linuxserver/**",
+        "jellyfin"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "Majors always get a human and a changelog read",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
     }
-  ]
+  ],
+  "platformAutomerge": false
 }
