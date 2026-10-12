@@ -18,6 +18,8 @@ spec:
       labels:
         app.kubernetes.io/name: qbittorrent
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: qbittorrent
           image: lscr.io/linuxserver/qbittorrent:5.2.4
