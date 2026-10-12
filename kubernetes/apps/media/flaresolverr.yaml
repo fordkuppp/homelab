@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flaresolverr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: flaresolverr
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flaresolverr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flaresolverr
+    spec:
+      containers:
+        - name: flaresolverr
+          image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+          env:
+            - name: LOG_LEVEL
+              value: info
+            - name: TZ
+              value: Asia/Bangkok
+          ports:
+            - name: http
+              containerPort: 8191
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flaresolverr
+  namespace: media
+spec:
+  selector:
+    app.kubernetes.io/name: flaresolverr
+  ports:
+    - name: http
+      port: 8191
+      targetPort: http
