@@ -47,6 +47,7 @@ spec:
   chart:
     spec:
       chart: intel-device-plugins-operator
+      version: "0.37.*"
       sourceRef:
         kind: HelmRepository
         name: intel-device-plugins
@@ -67,6 +68,7 @@ spec:
   chart:
     spec:
       chart: intel-device-plugins-gpu
+      version: "0.37.*"
       sourceRef:
         kind: HelmRepository
         name: intel-device-plugins
