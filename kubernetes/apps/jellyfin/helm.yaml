@@ -46,3 +46,27 @@ spec:
     resources:
       limits:
         gpu.intel.com/i915: 1
+    # Chart leaves timeoutSeconds at the k8s default of 1s. /health stalls past
+    # that when Jellyfin runs scheduled tasks (query planner, trickplay, plugin
+    # updates) against NFS-backed config, so liveness was killing a healthy
+    # container roughly every 10 minutes.
+    #
+    # Liveness is deliberately lenient: only restart if /health is unreachable
+    # for ~3 minutes. Readiness stays tight so a stalled pod leaves the Service
+    # without being killed.
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 10
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 6
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
