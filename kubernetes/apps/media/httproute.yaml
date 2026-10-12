@@ -97,17 +97,17 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: jellyseerr
+  name: seerr
   namespace: media
 spec:
   parentRefs:
     - name: tailscale-gateway
       namespace: tailscale
   hostnames:
-    - "jellyseerr.local.fordkuppp.me"
+    - "seerr.local.fordkuppp.me"
   rules:
     - backendRefs:
-        - name: jellyseerr
+        - name: seerr
           port: 5055
 ---
 apiVersion: gateway.networking.k8s.io/v1

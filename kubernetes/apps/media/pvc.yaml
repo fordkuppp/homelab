@@ -86,7 +86,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyseerr-config-pvc
+  name: seerr-config-pvc
   namespace: media
 spec:
   accessModes: [ReadWriteOnce]
