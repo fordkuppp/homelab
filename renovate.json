@@ -109,6 +109,15 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "description": "The Intel operator and GPU plugin must stay on the same version; a skew breaks GPU device registration and with it Jellyfin transcoding. One PR, and never automerged.",
+      "matchPackageNames": [
+        "intel-device-plugins-operator",
+        "intel-device-plugins-gpu"
+      ],
+      "groupName": "intel device plugins",
+      "automerge": false
     }
   ],
   "platformAutomerge": false
