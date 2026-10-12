@@ -18,9 +18,54 @@ spec:
       labels:
         app.kubernetes.io/name: qbittorrent
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 127.0.0.1
       containers:
+        - name: gluetun
+          image: qmcgaw/gluetun:v3.41.3
+          securityContext:
+            capabilities:
+              add: [NET_ADMIN]
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: airvpn
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: airvpn
+                  key: WIREGUARD_PRIVATE_KEY
+            - name: WIREGUARD_PRESHARED_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: airvpn
+                  key: WIREGUARD_PRESHARED_KEY
+            - name: WIREGUARD_ADDRESSES
+              valueFrom:
+                secretKeyRef:
+                  name: airvpn
+                  key: WIREGUARD_ADDRESSES
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: 10.42.0.0/16,10.43.0.0/16
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080"
+            - name: FIREWALL_VPN_INPUT_PORTS
+              valueFrom:
+                secretKeyRef:
+                  name: airvpn
+                  key: FORWARDED_PORT
+            - name: TZ
+              value: Asia/Bangkok
+          volumeMounts:
+            - name: tun
+              mountPath: /dev/net/tun
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
         - name: qbittorrent
           image: lscr.io/linuxserver/qbittorrent:5.2.4
           env:
@@ -33,13 +78,13 @@ spec:
             - name: WEBUI_PORT
               value: "8080"
             - name: TORRENTING_PORT
-              value: "51413"
+              valueFrom:
+                secretKeyRef:
+                  name: airvpn
+                  key: FORWARDED_PORT
           ports:
             - name: http
               containerPort: 8080
-              protocol: TCP
-            - name: bittorrent
-              containerPort: 51413
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -67,6 +112,10 @@ spec:
               cpu: 100m
               memory: 512Mi
       volumes:
+        - name: tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
         - name: config
           persistentVolumeClaim:
             claimName: qbittorrent-config-pvc
