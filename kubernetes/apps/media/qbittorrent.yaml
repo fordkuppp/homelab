@@ -33,6 +33,8 @@ spec:
               value: airvpn
             - name: VPN_TYPE
               value: wireguard
+            - name: SERVER_COUNTRIES
+              value: Singapore
             - name: WIREGUARD_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
