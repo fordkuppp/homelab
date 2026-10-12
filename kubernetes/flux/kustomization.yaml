@@ -11,7 +11,7 @@ resources:
   - gotify.yaml
   - homepage.yaml
   - immich.yaml
-  - jellyfin.yaml
+  - media.yaml
   - metrics-exporter.yaml
   - observability.yaml
   - pocket-id.yaml

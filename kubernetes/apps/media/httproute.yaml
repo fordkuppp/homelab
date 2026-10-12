@@ -1,0 +1,127 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: qbittorrent
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "qbittorrent.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: qbittorrent
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: prowlarr
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "prowlarr.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: prowlarr
+          port: 9696
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sonarr
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "sonarr.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: sonarr
+          port: 8989
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sonarr-anime
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "sonarr-anime.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: sonarr-anime
+          port: 8989
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "radarr.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: radarr
+          port: 7878
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bazarr
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "bazarr.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: bazarr
+          port: 6767
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jellyseerr
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "jellyseerr.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: jellyseerr
+          port: 5055
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "jellyfin.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: jellyfin
+          port: 8096

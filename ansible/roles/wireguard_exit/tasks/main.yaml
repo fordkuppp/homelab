@@ -1,0 +1,84 @@
+---
+- name: Fail fast when the client public key is missing
+  ansible.builtin.assert:
+    that:
+      - wg_client_public_key | length > 0
+    fail_msg: >-
+      wg_client_public_key is unset. Generate the pair on your workstation with
+      'wg genkey | tee client.key | wg pubkey', store the private key in Bitwarden
+      Secrets Manager, and set the public key in inventory/group_vars/vpn_exit.yaml.
+
+- name: Install WireGuard and iptables
+  ansible.builtin.package:
+    name:
+      - wireguard-tools
+      - iptables
+    state: present
+
+- name: Enable IPv4 forwarding
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-wireguard-exit.conf
+    content: "net.ipv4.ip_forward = 1\n"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sysctl
+
+# Forwarding has to be live before wg-quick brings the interface up, otherwise
+# the first run comes up with a tunnel that routes nothing.
+- name: Apply pending sysctl changes before the tunnel starts
+  ansible.builtin.meta: flush_handlers
+
+- name: Create the WireGuard config directory
+  ansible.builtin.file:
+    path: "{{ wg_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Generate the server private key
+  ansible.builtin.shell:
+    cmd: "umask 077 && wg genkey > {{ wg_config_dir }}/{{ wg_interface }}.key"
+    creates: "{{ wg_config_dir }}/{{ wg_interface }}.key"
+
+- name: Read the server private key
+  ansible.builtin.slurp:
+    src: "{{ wg_config_dir }}/{{ wg_interface }}.key"
+  register: wg_server_key_raw
+  no_log: true
+
+- name: Derive the server public key
+  ansible.builtin.command:
+    cmd: wg pubkey
+    stdin: "{{ wg_server_key_raw.content | b64decode }}"
+  register: wg_server_pubkey
+  changed_when: false
+  no_log: true
+
+- name: Render the WireGuard interface config
+  ansible.builtin.template:
+    src: wg0.conf.j2
+    dest: "{{ wg_config_dir }}/{{ wg_interface }}.conf"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart WireGuard
+
+- name: Enable and start WireGuard
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wg_interface }}"
+    enabled: true
+    state: started
+
+- name: Show the matching gluetun configuration
+  ansible.builtin.debug:
+    msg: >-
+      VPN_SERVICE_PROVIDER=custom |
+      VPN_TYPE=wireguard |
+      WIREGUARD_ENDPOINT_IP={{ wg_endpoint_ip }} |
+      WIREGUARD_ENDPOINT_PORT={{ wg_listen_port }} |
+      WIREGUARD_PUBLIC_KEY={{ wg_server_pubkey.stdout | trim }} |
+      WIREGUARD_ADDRESSES={{ wg_client_address }} |
+      WIREGUARD_PERSISTENT_KEEPALIVE_INTERVAL=25s |
+      (WIREGUARD_PRIVATE_KEY and any preshared key come from Bitwarden SM)
