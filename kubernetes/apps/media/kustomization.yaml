@@ -10,6 +10,6 @@ resources:
   - sonarr-anime.yaml
   - radarr.yaml
   - bazarr.yaml
-  - jellyseerr.yaml
+  - seerr.yaml
   - jellyfin.yaml
   - httproute.yaml

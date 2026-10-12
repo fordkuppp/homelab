@@ -1,0 +1,58 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommitsDisabled"
+  ],
+  "timezone": "Asia/Bangkok",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "rebaseWhen": "conflicted",
+  "labels": ["renovate"],
+  "osvVulnerabilityAlerts": true,
+  "ignorePaths": [
+    "**/.terragrunt-cache/**",
+    ".venv/**",
+    "site/**",
+    "scratchpad/**"
+  ],
+  "flux": {
+    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
+  },
+  "docker-compose": {
+    "managerFilePatterns": ["/^docker/compose/.+\\.ya?ml$/"]
+  },
+  "packageRules": [
+    {
+      "description": "Batch the *arr stack into one PR; they are upgraded together in practice",
+      "matchPackageNames": ["lscr.io/linuxserver/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "arr stack"
+    },
+    {
+      "description": "Observability images move together",
+      "matchPackageNames": [
+        "grafana/**",
+        "otel/**",
+        "ghcr.io/prometheus/**"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "observability"
+    },
+    {
+      "description": "Major bumps always get their own PR and a changelog read",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Let a release settle before proposing it",
+      "matchDatasources": ["docker"],
+      "minimumReleaseAge": "3 days"
+    }
+  ]
+}
