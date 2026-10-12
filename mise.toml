@@ -1,7 +1,7 @@
 [tools]
 "aqua:bitwarden/sdk-sm" = "2.0.0"
 opentofu = "1.13.1"
-terragrunt = "0.96"
+terragrunt = "0.99.5"
 
 [env]
 _.file = '.env'
