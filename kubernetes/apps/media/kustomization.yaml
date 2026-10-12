@@ -9,6 +9,7 @@ resources:
   - sonarr.yaml
   - radarr.yaml
   - bazarr.yaml
+  - flaresolverr.yaml
   - seerr.yaml
   - jellyfin.yaml
   - httproute.yaml
