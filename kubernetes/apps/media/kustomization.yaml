@@ -7,7 +7,6 @@ resources:
   - qbittorrent.yaml
   - prowlarr.yaml
   - sonarr.yaml
-  - sonarr-anime.yaml
   - radarr.yaml
   - bazarr.yaml
   - seerr.yaml
