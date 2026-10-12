@@ -1,0 +1,39 @@
+# Managed by Ansible (role: wireguard_exit). Local edits will be overwritten.
+
+[Interface]
+Address = {{ wg_server_address }}
+ListenPort = {{ wg_listen_port }}
+PrivateKey = {{ wg_server_key_raw.content | b64decode | trim }}
+MTU = {{ wg_mtu }}
+
+# Masquerade tunnel traffic out of the public interface.
+PostUp = iptables -t nat -A POSTROUTING -s {{ wg_subnet }} -o {{ wg_wan_interface }} -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -s {{ wg_subnet }} -o {{ wg_wan_interface }} -j MASQUERADE
+
+# Route packets in and out of the tunnel. Needed even when the FORWARD policy
+# is ACCEPT, so the rules survive a later switch to a default-deny policy.
+PostUp = iptables -A FORWARD -i %i -j ACCEPT
+PostDown = iptables -D FORWARD -i %i -j ACCEPT
+PostUp = iptables -A FORWARD -o %i -j ACCEPT
+PostDown = iptables -D FORWARD -o %i -j ACCEPT
+
+# Accept the handshake itself.
+PostUp = iptables -A INPUT -p udp --dport {{ wg_listen_port }} -j ACCEPT
+PostDown = iptables -D INPUT -p udp --dport {{ wg_listen_port }} -j ACCEPT
+{% if torrent_port | int > 0 %}
+
+# Forward inbound peer connections down the tunnel to qBittorrent. This is the
+# static equivalent of a commercial provider's port forwarding.
+PostUp = iptables -t nat -A PREROUTING -i {{ wg_wan_interface }} -p tcp --dport {{ torrent_port }} -j DNAT --to-destination {{ wg_client_ip }}:{{ torrent_port }}
+PostDown = iptables -t nat -D PREROUTING -i {{ wg_wan_interface }} -p tcp --dport {{ torrent_port }} -j DNAT --to-destination {{ wg_client_ip }}:{{ torrent_port }}
+PostUp = iptables -t nat -A PREROUTING -i {{ wg_wan_interface }} -p udp --dport {{ torrent_port }} -j DNAT --to-destination {{ wg_client_ip }}:{{ torrent_port }}
+PostDown = iptables -t nat -D PREROUTING -i {{ wg_wan_interface }} -p udp --dport {{ torrent_port }} -j DNAT --to-destination {{ wg_client_ip }}:{{ torrent_port }}
+{% endif %}
+
+[Peer]
+# Homelab: gluetun sidecar alongside qBittorrent in the media namespace.
+PublicKey = {{ wg_client_public_key }}
+{% if wg_preshared_key | length > 0 %}
+PresharedKey = {{ wg_preshared_key }}
+{% endif %}
+AllowedIPs = {{ wg_client_address }}

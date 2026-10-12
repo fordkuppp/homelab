@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sonarr
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sonarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sonarr
+    spec:
+      containers:
+        - name: sonarr
+          image: lscr.io/linuxserver/sonarr:4.0.20
+          env:
+            - name: PUID
+              value: "3000"
+            - name: PGID
+              value: "0"
+            - name: TZ
+              value: Asia/Bangkok
+          ports:
+            - name: http
+              containerPort: 8989
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: sonarr-config-pvc
+        - name: media-data
+          persistentVolumeClaim:
+            claimName: media-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarr
+  namespace: media
+spec:
+  selector:
+    app.kubernetes.io/name: sonarr
+  ports:
+    - name: http
+      port: 8989
+      targetPort: http

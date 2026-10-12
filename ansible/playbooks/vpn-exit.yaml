@@ -1,0 +1,8 @@
+---
+# Configure a rented VPS as the WireGuard exit for the media namespace's
+# gluetun sidecar. See ansible/README.md for the key-generation steps.
+- name: Configure the VPN exit node
+  hosts: vpn_exit
+  become: true
+  roles:
+    - wireguard_exit

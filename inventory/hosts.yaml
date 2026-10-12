@@ -1,0 +1,9 @@
+---
+all:
+  children:
+    # Rented VPS acting as the BitTorrent egress for the media namespace.
+    vpn_exit:
+      hosts:
+        vps-exit-01:
+          ansible_host: 203.0.113.10 # TODO: replace with the real VPS address
+          ansible_user: root

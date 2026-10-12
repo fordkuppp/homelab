@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: radarr
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radarr
+    spec:
+      containers:
+        - name: radarr
+          image: lscr.io/linuxserver/radarr:6.4.4
+          env:
+            - name: PUID
+              value: "3000"
+            - name: PGID
+              value: "0"
+            - name: TZ
+              value: Asia/Bangkok
+          ports:
+            - name: http
+              containerPort: 7878
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: radarr-config-pvc
+        - name: media-data
+          persistentVolumeClaim:
+            claimName: media-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  selector:
+    app.kubernetes.io/name: radarr
+  ports:
+    - name: http
+      port: 7878
+      targetPort: http

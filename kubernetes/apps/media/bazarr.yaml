@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: bazarr
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bazarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bazarr
+    spec:
+      containers:
+        - name: bazarr
+          image: lscr.io/linuxserver/bazarr:1.6.2
+          env:
+            - name: PUID
+              value: "3000"
+            - name: PGID
+              value: "0"
+            - name: TZ
+              value: Asia/Bangkok
+          ports:
+            - name: http
+              containerPort: 6767
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: bazarr-config-pvc
+        - name: media-data
+          persistentVolumeClaim:
+            claimName: media-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazarr
+  namespace: media
+spec:
+  selector:
+    app.kubernetes.io/name: bazarr
+  ports:
+    - name: http
+      port: 6767
+      targetPort: http

@@ -2,7 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: jellyfin
-  namespace: jellyfin
+  namespace: media
 spec:
   interval: 1h
   url: https://jellyfin.github.io/jellyfin-helm
@@ -11,7 +11,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: jellyfin
-  namespace: jellyfin
+  namespace: media
 spec:
   interval: 5m0s
   timeout: 10m0s
@@ -33,27 +33,22 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: jellyfin-config-pvc
+        existingClaim: media-jellyfin-config-pvc
       media:
         enabled: true
-        existingClaim: jellyfin-media-pvc
+        existingClaim: media-data-pvc
+        readOnly: true
     metrics:
       enabled: true
       serviceMonitor:
         enabled: true
+        labels:
+          release: kube-prometheus-stack
     securityContext:
       privileged: true
     resources:
       limits:
         gpu.intel.com/i915: 1
-    # Chart leaves timeoutSeconds at the k8s default of 1s. /health stalls past
-    # that when Jellyfin runs scheduled tasks (query planner, trickplay, plugin
-    # updates) against NFS-backed config, so liveness was killing a healthy
-    # container roughly every 10 minutes.
-    #
-    # Liveness is deliberately lenient: only restart if /health is unreachable
-    # for ~3 minutes. Readiness stays tight so a stalled pod leaves the Service
-    # without being killed.
     livenessProbe:
       httpGet:
         path: /health
