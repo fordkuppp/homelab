@@ -4,3 +4,4 @@ resources:
   - nfs-csi.yaml
   - metallb.yaml
   - intel-device-plugins.yaml
+  - reloader.yaml

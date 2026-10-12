@@ -1,0 +1,45 @@
+# Watches mounted Secrets/ConfigMaps and restarts the workloads that consume
+# them. Installed primarily for bitwarden-sdk-server, which reads its TLS
+# keypair once at startup and never reloads -- when cert-manager renews
+# bitwarden-tls-certs the files change, the process does not, and every
+# ExternalSecret in the cluster starts failing with
+# "x509: certificate signed by unknown authority".
+#
+# Opt-in only: a workload is restarted solely if it carries
+# reloader.stakater.com/auto (or a reloader.stakater.com/* annotation).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: reloader
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: stakater
+  namespace: reloader
+spec:
+  interval: 1h
+  url: https://stakater.github.io/stakater-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reloader
+  namespace: reloader
+spec:
+  interval: 5m0s
+  install:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: reloader
+      version: "2.*"
+      sourceRef:
+        kind: HelmRepository
+        name: stakater
+  values:
+    reloader:
+      watchGlobally: true
+      reloadStrategy: annotations
+      readOnlyRootFileSystem: true
