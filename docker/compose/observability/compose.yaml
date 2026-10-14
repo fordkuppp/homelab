@@ -1,6 +1,6 @@
 services:
   mimir:
-    image: grafana/mimir:3.0.3
+    image: grafana/mimir:3.2.2
     container_name: mimir
     command: ["-config.file=/etc/mimir.yaml"]
     ports:
@@ -35,7 +35,7 @@ services:
           subpath: observability/grafana
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.145.0
+    image: otel/opentelemetry-collector:0.162.0
     volumes:
       - type: volume
         source: nfs-general-data
