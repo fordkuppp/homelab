@@ -9,13 +9,8 @@ spec:
     annotations:
       k8up.io/backup: "false"
   storage:
-    pvcTemplate:
-      accessModes: [ReadWriteOnce]
-      storageClassName: nfs-csi
-      volumeName: pocket-id-postgres-pv
-      resources:
-        requests:
-          storage: 5Gi
+    storageClass: local-path
+    size: 5Gi
   bootstrap:
     initdb:
       database: pocketid
