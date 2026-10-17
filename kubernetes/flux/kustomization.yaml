@@ -11,6 +11,7 @@ resources:
   - gotify.yaml
   - homepage.yaml
   - immich.yaml
+  - k8up.yaml
   - media.yaml
   - metrics-exporter.yaml
   - observability.yaml

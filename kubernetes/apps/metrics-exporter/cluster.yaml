@@ -5,6 +5,9 @@ metadata:
   namespace: metrics-exporter
 spec:
   instances: 1
+  inheritedMetadata:
+    annotations:
+      k8up.io/backup: "false"
   imageCatalogRef:
     apiGroup: postgresql.cnpg.io
     kind: ImageCatalog

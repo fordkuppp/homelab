@@ -1,0 +1,47 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: k8up
+  namespace: k8up
+spec:
+  interval: 1h
+  url: https://k8up-io.github.io/k8up
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: k8up
+  namespace: k8up
+spec:
+  interval: 5m0s
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: k8up
+      version: 4.10.0
+      sourceRef:
+        kind: HelmRepository
+        name: k8up
+  values:
+    k8up:
+      timezone: Asia/Bangkok
+      envVars:
+        - name: BACKUP_GLOBALS3ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: k8up-r2
+              key: endpoint
+    metrics:
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
+      prometheusRule:
+        enabled: true
+        additionalLabels:
+          release: kube-prometheus-stack
