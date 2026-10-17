@@ -7,5 +7,6 @@ resources:
   - secrets.yaml
   - imagecatalog.yaml
   - cluster.yaml
+  - backup.yaml
   - database.yaml
   - deployment.yaml

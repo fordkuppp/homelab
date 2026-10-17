@@ -1,0 +1,60 @@
+apiVersion: k8up.io/v1
+kind: PreBackupPod
+metadata:
+  name: pocket-id-dump
+  namespace: pocket-id
+spec:
+  backupCommand: /bin/sh -c 'pg_dump --clean --if-exists --no-owner'
+  fileExtension: .sql
+  pod:
+    spec:
+      containers:
+        - name: dump
+          image: ghcr.io/cloudnative-pg/postgresql:18.1-system-trixie
+          command: ["sleep", "infinity"]
+          env:
+            - name: PGHOST
+              value: pocket-id-postgres-rw
+            - name: PGDATABASE
+              value: pocketid
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+---
+apiVersion: k8up.io/v1
+kind: Schedule
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+spec:
+  backend:
+    repoPasswordSecretRef:
+      name: k8up-repo
+      key: password
+    s3:
+      bucket: homelab-backups/pocket-id
+      accessKeyIDSecretRef:
+        name: k8up-repo
+        key: access_key
+      secretAccessKeySecretRef:
+        name: k8up-repo
+        key: secret_key
+  backup:
+    schedule: "15 2 * * *"
+    failedJobsHistoryLimit: 3
+    successfulJobsHistoryLimit: 1
+  check:
+    schedule: "45 4 * * 0"
+  prune:
+    schedule: "30 3 * * *"
+    retention:
+      keepDaily: 14
+      keepWeekly: 8
+      keepMonthly: 6

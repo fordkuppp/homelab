@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: media-data-pvc
   namespace: media
+  annotations:
+    k8up.io/backup: "false"
 spec:
   accessModes: [ReadWriteMany]
   storageClassName: nfs-csi-media

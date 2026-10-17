@@ -5,6 +5,9 @@ metadata:
   namespace: pocket-id
 spec:
   instances: 1
+  inheritedMetadata:
+    annotations:
+      k8up.io/backup: "false"
   storage:
     pvcTemplate:
       accessModes: [ReadWriteOnce]

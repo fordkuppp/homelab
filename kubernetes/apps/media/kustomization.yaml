@@ -5,6 +5,7 @@ resources:
   - pv.yaml
   - pvc.yaml
   - secrets.yaml
+  - backup.yaml
   - qbittorrent.yaml
   - prowlarr.yaml
   - sonarr.yaml
