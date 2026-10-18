@@ -30,6 +30,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: prowlarr-config-pvc
   namespace: media
+  annotations:
+    k8up.io/backup-restic-args: '["--exclude=/data/prowlarr-config-pvc/logs"]'
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: local-path
@@ -42,6 +44,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: sonarr-config-pvc
   namespace: media
+  annotations:
+    k8up.io/backup-restic-args: '["--exclude=/data/sonarr-config-pvc/logs","--exclude=/data/sonarr-config-pvc/MediaCover"]'
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: local-path
@@ -54,6 +58,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: radarr-config-pvc
   namespace: media
+  annotations:
+    k8up.io/backup-restic-args: '["--exclude=/data/radarr-config-pvc/logs","--exclude=/data/radarr-config-pvc/MediaCover"]'
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: local-path
@@ -66,6 +72,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: bazarr-config-pvc
   namespace: media
+  annotations:
+    k8up.io/backup-restic-args: '["--exclude=/data/bazarr-config-pvc/log","--exclude=/data/bazarr-config-pvc/cache"]'
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: local-path
@@ -90,6 +98,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: media-jellyfin-config-pvc
   namespace: media
+  annotations:
+    k8up.io/backup-restic-args: '["--exclude=/data/media-jellyfin-config-pvc/metadata","--exclude=/data/media-jellyfin-config-pvc/data/subtitles","--exclude=/data/media-jellyfin-config-pvc/log","--exclude=/data/media-jellyfin-config-pvc/cache","--exclude=/data/media-jellyfin-config-pvc/transcodes"]'
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: nfs-csi
