@@ -5,6 +5,7 @@ resources:
   - cert-manager.yaml
   - dns.yaml
   - envoy-gateway.yaml
+  - external.yaml
   - external-secrets.yaml
   - flux-noti.yaml
   - gateway.yaml

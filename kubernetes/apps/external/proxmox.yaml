@@ -1,0 +1,116 @@
+# Convenience route only. Proxmox hosts this cluster, so keep https://192.168.1.10:8006 as the way in when it is down. CA is /etc/pve/pve-root-ca.pem (valid to 2034); the node cert's SANs include "lab".
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxmox
+  namespace: external
+spec:
+  ports:
+    - name: https
+      port: 8006
+      targetPort: 8006
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: proxmox
+  namespace: external
+  labels:
+    kubernetes.io/service-name: proxmox
+addressType: IPv4
+ports:
+  - name: https
+    port: 8006
+endpoints:
+  - addresses:
+      - "192.168.1.10"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxmox-ca
+  namespace: external
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIFzTCCA7WgAwIBAgIULGp7L31mMeO665WtkuVLaByLlnUwDQYJKoZIhvcNAQEL
+    BQAwdjEkMCIGA1UEAwwbUHJveG1veCBWaXJ0dWFsIEVudmlyb25tZW50MS0wKwYD
+    VQQLDCRlYTFkZTMzYy1jNzM5LTQ4M2QtYTcxOS0zODJlMWNhYjM3MjIxHzAdBgNV
+    BAoMFlBWRSBDbHVzdGVyIE1hbmFnZXIgQ0EwHhcNMjQwNTMwMjIwNjU5WhcNMzQw
+    NTI4MjIwNjU5WjB2MSQwIgYDVQQDDBtQcm94bW94IFZpcnR1YWwgRW52aXJvbm1l
+    bnQxLTArBgNVBAsMJGVhMWRlMzNjLWM3MzktNDgzZC1hNzE5LTM4MmUxY2FiMzcy
+    MjEfMB0GA1UECgwWUFZFIENsdXN0ZXIgTWFuYWdlciBDQTCCAiIwDQYJKoZIhvcN
+    AQEBBQADggIPADCCAgoCggIBALurjhNjRTXAu8+RS2irTWiKy7Dua/on+HRgiKNZ
+    VZoXOhNEYC6m+an4HKRecJqsmLsNm58lv2JTXGQnTbXEHU+v0oTAGdkZCwZbDdfo
+    XIxeMn2cj7nWGC5OmE52yeLezYY5+z68iqleSsA2p9TOAewOFjbp0Co1FmvTadua
+    cllQHH4r7y3UAZNLoBTs3RGcsiwg4XXAKTf5C9obMn8ZGmNDZMFHFkDfB4wtP29e
+    Eq6nRijKrtTZ9WSNuFITVUsUwss9nKZ4zZEMlWOtPHbVyO2cshuLcMjUQ3EJVCC7
+    8fvg4rDXIgRrxbPhhKAHu8Q7C2Jj7tqUTwWVwj7yonVvrDjAqygLqZgSMgUhQkRC
+    SmkSDE2dF4nOG5YCHM7j+FhxoHqHClAIPuj8vg73+lgcUgIBW/OwoHNnq1a25sY5
+    /OBOWRZL0PlFIuwK7oENtpuVUVpjL2AwkLSpZFQ0voqbNKnUOOJS/thpfrkIeYdw
+    RJhQZ0t3GnJ5XunKoLuGZkcGx56Ix8mnON+7y+exVS/RJlK10Beug+KnRGuepFfm
+    lIMxJ9frQEaO1AMMgoFfyYfv4PhbjKvCSoecEiA2c/oC0Cj2ZRYaeBTAw/w1mF/o
+    ZC26uObQQ/aIqSBaPOhf1d68ThIV1nRBUTh2MNquxPLnA9iqH96qZ0+DcCfRqxcY
+    cV0hAgMBAAGjUzBRMB0GA1UdDgQWBBSsxbr79HDUMhzwkyzq8vEcLCrulzAfBgNV
+    HSMEGDAWgBSsxbr79HDUMhzwkyzq8vEcLCrulzAPBgNVHRMBAf8EBTADAQH/MA0G
+    CSqGSIb3DQEBCwUAA4ICAQCR409DdBsHpxsLYMt+1FpZVIlw8zoTVN7kf3vTrPaZ
+    GXb+DmGNlEBDB/n9iCg6Va2g5e4x3G8RAefibA7kp2g11eLp3CnJpCwlQI80ZPXI
+    7LRvTEI9GGh1xxv6hDRIlPB+cmApIEVi2rOSn7T7MUlhHBSfy1OFWiVOmglDFSrR
+    rxJAEgwDDuB/QH4nAHfeuh3g61mBfXwEpvBx5GP42W9JJmXCACUwe9pVD+NhxU2R
+    Ft9Le+pvdA58dDvQAOn615A+36W8su1SB2L3WXmHFAXmXvlevTFbYCWBH24fa4YX
+    xwOgQ9pJoqqI35TVuxNrrOdmU9f61QeQkUJISXsFZ7cxJYmKFmcfKj9QjmDvYVST
+    IKmWqJpVCZHtKI0ahxDdKTb7XuWDzeHu2LNTmuuZ+T0Y0bOi2kHL0RYmx5V7qSjl
+    zW3I+mgljrKfGQ4t2mT0gXDOXue4xMcst3zExQMBNA4pJ7E6jfmdd8KUFnmLNsxB
+    WnkF8oj0EgS2Guuy38jhIZYf00ehUx9F1Z+P2IJQ2JPo/F1GwPaR+zluBh5EhC4S
+    a64JvQbpJCBmpfyCmjHwmpUpPBYG5OWwvbUFDmwh3y7Hllr/jo6QOquMGYfGf/eo
+    huy9CfxQsxGtJ8JHa8X3lDIHtIJQPtI2uvgyO7IS33ekpqNudPpcfr8F8XuhVXMZ
+    3w==
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: proxmox
+  namespace: external
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: proxmox
+  validation:
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: proxmox-ca
+    hostname: lab
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: proxmox
+  namespace: external
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "pve.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: proxmox
+          port: 8006
+---
+# Consoles and the UI run over long-lived websockets
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: proxmox
+  namespace: external
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: proxmox
+  timeout:
+    http:
+      requestTimeout: "0s"
