@@ -1,0 +1,104 @@
+# Convenience route only; keep https://192.168.1.11 for when the cluster is down. Pins TrueNAS's self-signed default cert (CN/SAN localhost), which expires 2027-01-29 -- re-pin or switch TrueNAS to an ACME cert before then.
+apiVersion: v1
+kind: Service
+metadata:
+  name: truenas
+  namespace: external
+spec:
+  ports:
+    - name: https
+      port: 443
+      targetPort: 443
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: truenas
+  namespace: external
+  labels:
+    kubernetes.io/service-name: truenas
+addressType: IPv4
+ports:
+  - name: https
+    port: 443
+endpoints:
+  - addresses:
+      - "192.168.1.11"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: truenas-ca
+  namespace: external
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDrTCCApWgAwIBAgIEElFxCTANBgkqhkiG9w0BAQsFADCBgDELMAkGA1UEBhMC
+    VVMxEjAQBgNVBAoMCWlYc3lzdGVtczESMBAGA1UEAwwJbG9jYWxob3N0MSEwHwYJ
+    KoZIhvcNAQkBFhJpbmZvQGl4c3lzdGVtcy5jb20xEjAQBgNVBAgMCVRlbm5lc3Nl
+    ZTESMBAGA1UEBwwJTWFyeXZpbGxlMB4XDTI1MTIyODA5MDQzM1oXDTI3MDEyOTA5
+    MDQzM1owgYAxCzAJBgNVBAYTAlVTMRIwEAYDVQQKDAlpWHN5c3RlbXMxEjAQBgNV
+    BAMMCWxvY2FsaG9zdDEhMB8GCSqGSIb3DQEJARYSaW5mb0BpeHN5c3RlbXMuY29t
+    MRIwEAYDVQQIDAlUZW5uZXNzZWUxEjAQBgNVBAcMCU1hcnl2aWxsZTCCASIwDQYJ
+    KoZIhvcNAQEBBQADggEPADCCAQoCggEBALveXanVeIMbXK7+oz5p5y75zDVHP41g
+    lZ/mBSOCekW5+GuXTA6QUnagEQUCxLkhHJJ4NcESgxzHU450sOWdrsnW36yhzrEI
+    oOgnILM3fwRS11MPuGbntvyo8RGSQ3P0iuEHTsl/OXAMo4uK1+6mUMbHz6QIbfkw
+    vzJ0rfElKAYYwR3t4cmF7iCrbB+tWYaXxBnsviInoa/7SNRKzOH6EE+cFQqGaX67
+    FvxkMslrBuJzxobY83Rskd/BFZMzdR6+rGLXQT6azzhLjDz4TjvnGDC86Nc9Yv+X
+    Od4Uqiy4Tw8IkBkTvIBXYwLV6AGseMzO0LR4c3mV+WjNYRaSko9NGHcCAwEAAaMt
+    MCswFAYDVR0RBA0wC4IJbG9jYWxob3N0MBMGA1UdJQQMMAoGCCsGAQUFBwMBMA0G
+    CSqGSIb3DQEBCwUAA4IBAQAN0BMPY0NuX5nsx9wNjLzX0O29/uVFFP+/HBtIcupe
+    e5wcLZOjhDuF9llXMxGftUoS74dEDql73vU03pvJZWB2lKuj0AjuWKUf5fnVFT/G
+    WKpzV2vzKGBzLXbjT6kY9m9p/ZkNq1S+WqOBdzC+YdjgD66FXjc449WncWGgE1Yc
+    MSgAyhJA5aEOqCDhymN6DTrxfCJpcF9HgIQcY8JhTz87AwhozhhphNF2TVtVE/cM
+    fAri7i9Bdq3+OczirgjeSvbYlvQ3In9M7+vt+IGYFfh3sHyebxJA/AoeIjXmM4xs
+    Ur82mCGt5ElRpak4tvj9LC8EqKht3Ou3/lEHTza7bWSS
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: truenas
+  namespace: external
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: truenas
+  validation:
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: truenas-ca
+    hostname: localhost
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: truenas
+  namespace: external
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "nas.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: truenas
+          port: 443
+---
+# Consoles and the UI run over long-lived websockets
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: truenas
+  namespace: external
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: truenas
+  timeout:
+    http:
+      requestTimeout: "0s"

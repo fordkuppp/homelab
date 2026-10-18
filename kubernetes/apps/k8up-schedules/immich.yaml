@@ -1,0 +1,30 @@
+apiVersion: k8up.io/v1
+kind: Schedule
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  backend:
+    repoPasswordSecretRef:
+      name: k8up-repo
+      key: password
+    s3:
+      bucket: homelab-backups/immich
+      accessKeyIDSecretRef:
+        name: k8up-repo
+        key: access_key
+      secretAccessKeySecretRef:
+        name: k8up-repo
+        key: secret_key
+  backup:
+    schedule: "30 3 * * *"
+    failedJobsHistoryLimit: 3
+    successfulJobsHistoryLimit: 1
+  check:
+    schedule: "30 6 * * 0"
+  prune:
+    schedule: "20 4 * * *"
+    retention:
+      keepDaily: 14
+      keepWeekly: 8
+      keepMonthly: 6
