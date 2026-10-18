@@ -6,4 +6,3 @@ resources:
   - helm.yaml
   - secrets.yaml
   - cluster.yaml
-  - backup.yaml
