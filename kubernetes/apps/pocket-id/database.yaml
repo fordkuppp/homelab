@@ -1,0 +1,47 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: pocketid-db
+  namespace: postgres
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      type: kubernetes.io/basic-auth
+      engineVersion: v2
+      data:
+        username: pocketid
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: pocket_id_db_password
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: postgres-pocketid-role
+  namespace: postgres
+spec:
+  name: pocketid
+  ensure: present
+  login: true
+  passwordSecret:
+    name: pocketid-db
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-pocketid-db
+  namespace: postgres
+spec:
+  name: pocketid
+  owner: pocketid
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
