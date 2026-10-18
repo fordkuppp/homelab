@@ -7,7 +7,6 @@ resources:
   - media.yaml
   - actual.yaml
   - dns.yaml
-  - immich.yaml
   - gotify.yaml
   - syncthing.yaml
   - uptime-kuma.yaml
