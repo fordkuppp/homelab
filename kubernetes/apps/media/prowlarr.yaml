@@ -28,6 +28,24 @@ spec:
               value: "0"
             - name: TZ
               value: Asia/Bangkok
+            - name: PROWLARR__POSTGRES__HOST
+              value: postgres-rw.postgres.svc.cluster.local
+            - name: PROWLARR__POSTGRES__PORT
+              value: "5432"
+            - name: PROWLARR__POSTGRES__MAINDB
+              value: prowlarr_main
+            - name: PROWLARR__POSTGRES__LOGDB
+              value: prowlarr_log
+            - name: PROWLARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: arr-db
+                  key: username
+            - name: PROWLARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: arr-db
+                  key: password
           ports:
             - name: http
               containerPort: 9696
