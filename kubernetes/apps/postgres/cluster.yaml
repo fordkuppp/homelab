@@ -9,7 +9,7 @@ spec:
     annotations:
       k8up.io/backup: "false"
   storage:
-    storageClass: nfs-csi-postgres
+    storageClass: local-path
     size: 10Gi
   imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.12
   postgresql:
