@@ -1,0 +1,107 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: arr-db
+  namespace: postgres
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      type: kubernetes.io/basic-auth
+      engineVersion: v2
+      data:
+        username: arr
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: arr_db_password
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: postgres-arr-role
+  namespace: postgres
+spec:
+  name: arr
+  ensure: present
+  login: true
+  passwordSecret:
+    name: arr-db
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-sonarr-main-db
+  namespace: postgres
+spec:
+  name: sonarr_main
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-sonarr-log-db
+  namespace: postgres
+spec:
+  name: sonarr_log
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-radarr-main-db
+  namespace: postgres
+spec:
+  name: radarr_main
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-radarr-log-db
+  namespace: postgres
+spec:
+  name: radarr_log
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-prowlarr-main-db
+  namespace: postgres
+spec:
+  name: prowlarr_main
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-prowlarr-log-db
+  namespace: postgres
+spec:
+  name: prowlarr_log
+  owner: arr
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
