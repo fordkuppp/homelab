@@ -28,6 +28,24 @@ spec:
               value: "0"
             - name: TZ
               value: Asia/Bangkok
+            - name: SONARR__POSTGRES__HOST
+              value: postgres-rw.postgres.svc.cluster.local
+            - name: SONARR__POSTGRES__PORT
+              value: "5432"
+            - name: SONARR__POSTGRES__MAINDB
+              value: sonarr_main
+            - name: SONARR__POSTGRES__LOGDB
+              value: sonarr_log
+            - name: SONARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: arr-db
+                  key: username
+            - name: SONARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: arr-db
+                  key: password
           ports:
             - name: http
               containerPort: 8989

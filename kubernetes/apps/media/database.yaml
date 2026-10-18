@@ -105,3 +105,24 @@ spec:
   databaseReclaimPolicy: retain
   cluster:
     name: postgres
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: arr-db
+  namespace: media
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      engineVersion: v2
+      data:
+        username: arr
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: arr_db_password
