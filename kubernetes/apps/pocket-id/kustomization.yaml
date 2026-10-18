@@ -6,6 +6,5 @@ resources:
   - pvc.yaml
   - secrets.yaml
   - cluster.yaml
-  - backup.yaml
   - deployment.yaml
   - httproute.yaml
