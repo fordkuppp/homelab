@@ -1,35 +1,14 @@
-# Standalone unit: root.hcl generates proxmox-specific provider/versions blocks,
-# and terragrunt rejects same-named generate blocks in a child, so this unit
-# defines its own backend and providers rather than including root.
-locals {
-  secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/sops/secrets.enc.yaml"))
+include "root" {
+  path   = find_in_parent_folders("root.hcl")
+  expose = true
 }
 
 terraform {
   source = "../../modules/truenas-snapshots"
 }
 
-remote_state {
-  backend = "s3"
-  generate = {
-    path      = "backend.tf"
-    if_exists = "overwrite_terragrunt"
-  }
-  config = {
-    endpoint   = "https://${local.secrets.cloudflare.r2.account_id}.r2.cloudflarestorage.com"
-    bucket     = local.secrets.cloudflare.r2.bucket_name
-    key        = "truenas/snapshots/tofu.tfstate"
-    region     = "auto"
-    access_key = local.secrets.cloudflare.r2.access_key
-    secret_key = local.secrets.cloudflare.r2.secret_key
-
-    skip_credentials_validation = true
-    skip_metadata_api_check     = true
-    skip_region_validation      = true
-    skip_requesting_account_id  = true
-    skip_s3_checksum            = true
-    use_path_style              = true
-  }
+locals {
+  secrets = include.root.locals.secrets
 }
 
 generate "versions" {
