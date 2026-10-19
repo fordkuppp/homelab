@@ -35,7 +35,7 @@ services:
           subpath: observability/grafana
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.162.0
+    image: otel/opentelemetry-collector:0.163.1
     volumes:
       - type: volume
         source: nfs-general-data
