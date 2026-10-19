@@ -21,7 +21,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: pocket-id
-          image: ghcr.io/pocket-id/pocket-id:v2.14.0
+          image: ghcr.io/pocket-id/pocket-id:v2.18.0
           env:
             - name: APP_URL
               value: https://id.local.fordkuppp.me
