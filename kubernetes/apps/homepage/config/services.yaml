@@ -11,15 +11,39 @@
         icon: technitium
         href: https://dns.local.fordkuppp.me
         description: DNS Server
-- Monitoring:
-    - Grafana:
-        icon: grafana
-        href: https://grafana.local.fordkuppp.me
-        description: Dashboards
-    - Uptime Kuma:
-        icon: uptime-kuma
-        href: https://uptime.local.fordkuppp.me
-        description: Status monitoring
+    - Pocket ID:
+        icon: pocket-id
+        href: https://id.local.fordkuppp.me
+        description: Identity provider
+- Media:
+    - Jellyfin:
+        icon: jellyfin
+        href: https://jellyfin.local.fordkuppp.me
+        description: Media server
+    - Seerr:
+        icon: jellyseerr
+        href: https://seerr.local.fordkuppp.me
+        description: Requests
+    - Sonarr:
+        icon: sonarr
+        href: https://sonarr.local.fordkuppp.me
+        description: TV and anime
+    - Radarr:
+        icon: radarr
+        href: https://radarr.local.fordkuppp.me
+        description: Movies
+    - Prowlarr:
+        icon: prowlarr
+        href: https://prowlarr.local.fordkuppp.me
+        description: Indexers
+    - Bazarr:
+        icon: bazarr
+        href: https://bazarr.local.fordkuppp.me
+        description: Subtitles
+    - qBittorrent:
+        icon: qbittorrent
+        href: https://qbittorrent.local.fordkuppp.me
+        description: Download client
 - Apps:
     - Actual Budget:
         icon: actual-budget
@@ -29,11 +53,20 @@
         icon: immich
         href: https://immich.local.fordkuppp.me
         description: Photo management
-    - Jellyfin:
-        icon: jellyfin
-        href: https://jellyfin.local.fordkuppp.me
-        description: Media server
     - Syncthing:
         icon: syncthing
         href: https://sync.local.fordkuppp.me
         description: File synchronization
+    - Gotify:
+        icon: gotify
+        href: https://gotify.local.fordkuppp.me
+        description: Notifications
+- Monitoring:
+    - Grafana:
+        icon: grafana
+        href: https://grafana.local.fordkuppp.me
+        description: Dashboards
+    - Uptime Kuma:
+        icon: uptime-kuma
+        href: https://uptime.local.fordkuppp.me
+        description: Status monitoring
