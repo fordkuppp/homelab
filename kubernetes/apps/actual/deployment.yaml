@@ -21,7 +21,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: actual
-          image: ghcr.io/actualbudget/actual:26.9.0
+          image: ghcr.io/actualbudget/actual:26.10.0
           env:
             - name: ACTUAL_PORT
               value: "5006"
