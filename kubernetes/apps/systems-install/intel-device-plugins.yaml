@@ -16,7 +16,7 @@ spec:
   interval: 1h
   url: oci://registry.k8s.io/nfd/charts/node-feature-discovery
   ref:
-    tag: 0.18.3
+    tag: 0.20.0
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
