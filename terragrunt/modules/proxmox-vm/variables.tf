@@ -98,3 +98,20 @@ variable "pci_devices" {
   description = "PCI devices to passthrough to the VM via resource mappings"
   default     = []
 }
+variable "disk_discard" {
+  description = "Pass guest TRIM through to the underlying storage (on/ignore)"
+  type        = string
+  default     = "ignore"
+}
+
+variable "disk_ssd" {
+  description = "Present the disk to the guest as non-rotational"
+  type        = bool
+  default     = false
+}
+
+variable "serial_device" {
+  description = "Attach a serial console socket (required by some cloud images)"
+  type        = bool
+  default     = false
+}

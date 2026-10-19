@@ -13,7 +13,7 @@ remote_state {
     endpoint = "https://${local.secrets.cloudflare.r2.account_id}.r2.cloudflarestorage.com"
     bucket   = local.secrets.cloudflare.r2.bucket_name
 
-    key = "${path_relative_to_include()}/tofu.tfstate"
+    key = "${path_relative_to_include("root")}/tofu.tfstate"
 
     region = "auto"
 
@@ -28,43 +28,4 @@ remote_state {
     skip_s3_checksum            = true
     use_path_style              = true
   }
-}
-
-generate "provider" {
-  path      = "provider.tf"
-  if_exists = "overwrite"
-  contents  = <<EOF
-provider "proxmox" {
-  endpoint  = "${local.secrets.proxmox.endpoint}"
-  api_token = "${local.secrets.proxmox.token_id}=${local.secrets.proxmox.token_secret}"
-  insecure  = true
-
-  ssh {
-    agent  = true
-    username = "${local.secrets.proxmox.ssh.host.username}"
-    private_key = <<EOF_KEY
-${local.secrets.proxmox.ssh.host.private_key}
-EOF_KEY
-  }
-}
-EOF
-}
-
-generate "versions" {
-  path      = "versions.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-terraform {
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "0.90.0"
-    }
-  }
-}
-EOF
-}
-
-inputs = {
-  secrets = local.secrets
 }

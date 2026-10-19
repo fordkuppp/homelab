@@ -3,6 +3,10 @@ include "root" {
   expose = true
 }
 
+include "proxmox" {
+  path = find_in_parent_folders("proxmox.hcl")
+}
+
 terraform {
   source = "../../../modules/proxmox-vm"
 }
@@ -21,7 +25,10 @@ inputs = {
 
   cpu_cores    = 4
   memory       = 24576
-  disk_size_gb = 64
+  disk_size_gb = 128
+  disk_discard = "on"
+  disk_ssd     = true
+  serial_device = true
 
   cloud_image_id = dependency.ubuntu_image.outputs.file_id
 
