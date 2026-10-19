@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: dump
-          image: ghcr.io/tensorchord/cloudnative-vectorchord:16.12
+          image: ghcr.io/tensorchord/cloudnative-vectorchord:16.15
           command: ["sleep", "infinity"]
           env:
             - name: PGHOST
