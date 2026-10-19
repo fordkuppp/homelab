@@ -3,6 +3,10 @@ include "root" {
   expose = true
 }
 
+include "proxmox" {
+  path = find_in_parent_folders("proxmox.hcl")
+}
+
 terraform {
   source = "../../../modules/proxmox-vm"
 }

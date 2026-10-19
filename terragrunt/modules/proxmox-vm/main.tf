@@ -113,11 +113,20 @@ resource "proxmox_virtual_environment_vm" "vm" {
     bridge = "vmbr0"
   }
 
+  dynamic "serial_device" {
+    for_each = var.serial_device ? [1] : []
+    content {
+      device = "socket"
+    }
+  }
+
   disk {
     datastore_id = var.datastore_id
     file_id      = var.cloud_image_id
     interface = "scsi0"
     size = var.disk_size_gb
+    discard = var.disk_discard
+    ssd     = var.disk_ssd
   }
 
   dynamic "hostpci" {
