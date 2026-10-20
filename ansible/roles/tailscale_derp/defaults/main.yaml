@@ -1,0 +1,29 @@
+---
+# --- Tailscale node ---
+# Required. Tagged pre-auth key, passed at run time (see group_vars/edge.yaml).
+tailscale_authkey: ""
+tailscale_hostname: "{{ inventory_hostname }}"
+# A relay wants neither tailnet DNS nor subnet routes, and no tailnet SSH.
+tailscale_up_args: >-
+  --accept-dns=false --accept-routes=false --ssh=false
+  --hostname={{ tailscale_hostname }}
+
+# --- DERP relay (derper) ---
+derp_hostname: "derp.example.com"
+# No Caddy yet, so derper owns the standard ports and gets its own cert.
+derp_https_port: 443
+derp_http_port: 80          # HTTP->HTTPS redirect + ACME HTTP-01 challenge
+derp_stun_port: 3478
+derp_home: /var/lib/derper
+derp_certdir: "{{ derp_home }}/certs"
+derp_bin: /usr/local/bin/derper
+derp_version_stamp: "{{ derp_home }}/.derper_version"
+# Only clients present in this tailnet may use the relay (needs local tailscaled).
+derp_verify_clients: true
+
+# --- build toolchain (derper is built from the tailscale module) ---
+derper_version: "v1.78.1"
+go_version: "1.23.2"
+go_arch: amd64
+# Optional: set the official tarball checksum to verify the Go download.
+go_tarball_sha256: ""

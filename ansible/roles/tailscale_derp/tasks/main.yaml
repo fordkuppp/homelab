@@ -1,0 +1,134 @@
+---
+- name: Fail fast when the Tailscale auth key is missing
+  ansible.builtin.assert:
+    that:
+      - tailscale_authkey | length > 0
+    fail_msg: >-
+      tailscale_authkey is unset. Create a TAGGED pre-auth key in the Tailscale
+      admin console, store it in Bitwarden Secrets Manager, and pass it at run
+      time: -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)".
+
+# --- Tailscale node (so derper can --verify-clients against the tailnet) ---
+- name: Install Tailscale via the official script
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://tailscale.com/install.sh | sh
+    creates: /usr/bin/tailscale
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Check tailnet connection state
+  ansible.builtin.command:
+    cmd: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Join the tailnet
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ tailscale_authkey }} {{ tailscale_up_args }}"
+  when: >-
+    tailscale_status.rc != 0
+    or (tailscale_status.stdout | from_json).BackendState | default('') != 'Running'
+  no_log: true
+  register: tailscale_up
+  changed_when: tailscale_up.rc == 0
+
+# --- Go toolchain (derper is built from the tailscale module) ---
+- name: Check the installed Go version
+  ansible.builtin.command:
+    cmd: /usr/local/go/bin/go version
+  register: go_installed
+  changed_when: false
+  failed_when: false
+
+- name: Download the pinned Go toolchain
+  ansible.builtin.get_url:
+    url: "https://go.dev/dl/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
+    dest: "/tmp/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
+    checksum: "{{ ('sha256:' ~ go_tarball_sha256) if go_tarball_sha256 else omit }}"
+    mode: "0644"
+  when: "('go version go' ~ go_version) not in (go_installed.stdout | default(''))"
+
+- name: Replace the Go toolchain
+  when: "('go version go' ~ go_version) not in (go_installed.stdout | default(''))"
+  block:
+    - name: Remove any previous Go toolchain
+      ansible.builtin.file:
+        path: /usr/local/go
+        state: absent
+
+    - name: Unpack Go into /usr/local
+      ansible.builtin.unarchive:
+        src: "/tmp/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
+        dest: /usr/local
+        remote_src: true
+
+# --- derper binary ---
+- name: Create the derper state directory
+  ansible.builtin.file:
+    path: "{{ derp_certdir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Read the built derper version
+  ansible.builtin.slurp:
+    src: "{{ derp_version_stamp }}"
+  register: derper_stamp
+  failed_when: false
+
+- name: Build derper at the pinned version
+  ansible.builtin.command:
+    cmd: "/usr/local/go/bin/go install tailscale.com/cmd/derper@{{ derper_version }}"
+  environment:
+    GOBIN: "{{ derp_bin | dirname }}"
+    GOPATH: /root/go
+    GOCACHE: /root/.cache/go-build
+  when: (derper_stamp.content | default('') | b64decode | trim) != derper_version
+  register: derper_build
+  changed_when: derper_build.rc == 0
+
+- name: Stamp the built derper version
+  ansible.builtin.copy:
+    dest: "{{ derp_version_stamp }}"
+    content: "{{ derper_version }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  when: derper_build is changed
+  notify: Restart derper
+
+# --- service ---
+- name: Install the derper systemd unit
+  ansible.builtin.template:
+    src: derper.service.j2
+    dest: /etc/systemd/system/derper.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart derper
+
+- name: Enable and start derper
+  ansible.builtin.systemd:
+    name: derper
+    enabled: true
+    state: started
+
+- name: Next steps -- add the relay to your tailnet and open the ports
+  ansible.builtin.debug:
+    msg:
+      - "DNS: create A record  {{ derp_hostname }} -> {{ ansible_host | default(inventory_hostname) }}"
+      - "Firewall/provider SG: open  443/tcp, 80/tcp (ACME), 3478/udp"
+      - "Tailnet ACL -> add a custom DERP region (keep defaults as fallback):"
+      - >-
+        "derpMap": { "OmitDefaultRegions": false, "Regions": { "900":
+        { "RegionID": 900, "RegionCode": "bkk", "Nodes":
+        [ { "Name": "1", "RegionID": 900, "HostName": "{{ derp_hostname }}" } ] } } }
+      - "Verify from a client:  tailscale netcheck   (your 'bkk' region should appear)"

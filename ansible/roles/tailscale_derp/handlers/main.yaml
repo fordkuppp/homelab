@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart derper
+  ansible.builtin.systemd:
+    name: derper
+    state: restarted

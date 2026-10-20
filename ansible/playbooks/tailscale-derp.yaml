@@ -1,0 +1,10 @@
+---
+# Stand up the Bangkok edge VPS as a custom Tailscale DERP relay. This gives
+# private tailnet traffic (jellyfin et al.) a close, un-throttled relay instead
+# of the Singapore public DERP, which is the only path available while the
+# homelab sits behind CGNAT. See ansible/roles/tailscale_derp for the details.
+- name: Configure the Tailscale DERP relay
+  hosts: edge
+  become: true
+  roles:
+    - tailscale_derp

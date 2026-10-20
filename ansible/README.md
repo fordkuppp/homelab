@@ -4,6 +4,64 @@ Configuration layer for hosts that are not managed by Flux. Layout follows
 [`docs/structure.md`](../docs/structure.md): inventory lives at the repo root,
 roles and playbooks live here.
 
+## tailscale-derp
+
+Turns the Bangkok `edge` VPS into a custom Tailscale **DERP relay**. The
+homelab sits behind CGNAT and advertises no reachable endpoints, so tailnet
+peers can never connect directly and fall back to the Singapore public DERP --
+slow and bandwidth-throttled. A relay on a public-IP VPS close to home becomes
+the preferred path: both ends reach it directly, and it is un-throttled. It
+still shows as `relay`, because only IPv6 or a public home IP give true direct,
+but it is a fast, close, owned relay.
+
+The box also runs `tailscaled` purely so derper can `--verify-clients` against
+the tailnet (keeps the relay from being open to the world). Caddy public
+ingress is intentionally **not** here yet -- deferred until the provider can
+offer a second IP, so derper keeps `:443` and its own Let's Encrypt cert.
+
+### 1. Get a tagged auth key
+
+Create a **tagged** pre-auth key in the Tailscale admin console (reusable or
+one-shot), store it in Bitwarden Secrets Manager, and declare its tag's
+`tagOwners` in your tailnet policy. The private half is passed at run time and
+never committed, mirroring the WireGuard key handling.
+
+### 2. Point the inventory at the VPS
+
+Set `ansible_host` for `derp-bkk-01` in `inventory/hosts.yaml`, and the real
+`derp_hostname` / `derper_version` in `inventory/group_vars/edge.yaml`. The role
+assumes a Debian or Ubuntu image with key-based root SSH. Create a DNS `A`
+record for `derp_hostname` pointing at the VPS before running, so derper's
+Let's Encrypt validation succeeds.
+
+### 3. Run it
+
+```fish
+cd ansible
+ansible-playbook playbooks/tailscale-derp.yaml \
+  -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
+```
+
+The final task prints the DNS record, the ports to open, and the `derpMap`
+block to paste into your tailnet policy.
+
+### Afterwards
+
+- **Open the ports in the provider's cloud firewall**: `443/tcp` and `80/tcp`
+  (ACME) for DERP-over-HTTPS, `3478/udp` for STUN. Same separate-layer caveat
+  as vpn-exit -- a relay that looks healthy but is unreachable is almost always
+  a closed security-group port.
+- Add the printed `derpMap` region to the tailnet ACL (`OmitDefaultRegions:
+  false` keeps the public DERPs as fallback).
+- Verify from any client: `tailscale netcheck` should list your `bkk` region,
+  and `tailscale ping <homelab-host>` should report `via DERP(bkk)` instead of
+  `sin`.
+
+### Scope
+
+Relay only. Like vpn-exit, it does not harden the host (no SSH hardening, no
+fail2ban, no default-deny firewall). Handle baseline hardening separately.
+
 ## vpn-exit
 
 Turns a rented VPS into a WireGuard exit node for the `media` namespace's
