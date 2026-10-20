@@ -1,0 +1,29 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Tailscale DERP relay
+After=network-online.target tailscaled.service
+Wants=network-online.target
+# --verify-clients talks to the local tailscaled LocalAPI socket.
+Requires=tailscaled.service
+
+[Service]
+# Runs as root: binds :80/:443 and reads the tailscaled socket for
+# --verify-clients without extra capability/group plumbing on a dedicated box.
+ExecStart={{ derp_bin }} \
+  -hostname {{ derp_hostname }} \
+  -a :{{ derp_https_port }} \
+  -http-port {{ derp_http_port }} \
+  -stun -stun-port {{ derp_stun_port }} \
+  -certmode letsencrypt \
+  -certdir {{ derp_certdir }}{% if derp_verify_clients %} \
+  -verify-clients{% endif %}
+
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ derp_certdir }}
+
+[Install]
+WantedBy=multi-user.target

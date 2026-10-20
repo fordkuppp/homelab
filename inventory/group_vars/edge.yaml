@@ -1,0 +1,16 @@
+---
+# Edge node = public-IP Bangkok VPS. For now it runs ONLY a custom Tailscale
+# DERP relay (derper). Caddy public ingress is deferred pending a second IP.
+
+# Tagged Tailscale pre-auth key. NEVER commit -- pass at run time from
+# Bitwarden Secrets Manager, mirroring the wireguard_exit secret handling:
+#   ansible-playbook ansible/playbooks/tailscale-derp.yaml \
+#     -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
+tailscale_authkey: "" # runtime only
+
+# Public hostname of the DERP server. Needs an A record -> this VPS's IP so
+# derper's Let's Encrypt (HTTP-01/TLS-ALPN) can validate on :80/:443.
+derp_hostname: "derp.example.com" # TODO
+
+# Pin near your tailscaled release line. Renovate can bump this.
+derper_version: "v1.78.1" # TODO: confirm against `tailscale version`

@@ -7,3 +7,13 @@ all:
         vps-exit-01:
           ansible_host: 203.0.113.10 # TODO: replace with the real VPS address
           ansible_user: root
+
+    # Bangkok VPS, public IP. Runs a custom Tailscale DERP relay so private
+    # tailnet access (jellyfin etc.) stays fast under home CGNAT instead of
+    # hair-pinning through the Singapore public DERP. Caddy public ingress is
+    # deferred until the provider can offer a second IP.
+    edge:
+      hosts:
+        derp-bkk-01:
+          ansible_host: 203.0.113.20 # TODO: replace with the real Bangkok VPS address
+          ansible_user: root
