@@ -4,7 +4,7 @@
 # the second. Each gets its own Let's Encrypt cert -- no port collision.
 
 # Tagged Tailscale pre-auth key. NEVER commit -- pass at run time from
-# Bitwarden Secrets Manager, mirroring the wireguard_exit secret handling:
+# Bitwarden Secrets Manager (never committed):
 #   ansible-playbook ansible/playbooks/tailscale-derp.yaml \
 #     -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
 tailscale_authkey: "" # runtime only
