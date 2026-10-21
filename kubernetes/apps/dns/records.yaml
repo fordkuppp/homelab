@@ -1,0 +1,16 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: edge-vps
+  namespace: dns
+  annotations:
+    # DERP terminates its own TLS and runs its own ACME -- Cloudflare must NOT
+    # proxy this (grey cloud), or the relay and cert issuance break.
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  endpoints:
+    - dnsName: derp.fordkuppp.me
+      recordType: A
+      recordTTL: 300
+      targets:
+        - 117.18.125.44 # edge VPS, first IP (derper)

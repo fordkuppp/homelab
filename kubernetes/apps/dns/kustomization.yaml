@@ -5,4 +5,6 @@ resources:
   - secrets.yaml
   - helmrepository.yaml
   - external-dns-local.yaml
+  - external-dns-public.yaml
+  - records.yaml
   - technitium.yaml
