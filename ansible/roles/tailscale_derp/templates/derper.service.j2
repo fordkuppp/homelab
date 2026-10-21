@@ -23,7 +23,10 @@ RestartSec=5
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths={{ derp_certdir }}
+PrivateTmp=true
+# derper writes its DERP key at {{ derp_home }}/derper.key and certs under
+# {{ derp_certdir }} -- the whole state dir must be writable, not just certs.
+ReadWritePaths={{ derp_home }}
 
 [Install]
 WantedBy=multi-user.target

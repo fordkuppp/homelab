@@ -36,6 +36,12 @@ assumes a Debian or Ubuntu image with key-based root SSH. Create a DNS `A`
 record for `derp_hostname` pointing at the VPS before running, so derper's
 Let's Encrypt validation succeeds.
 
+Tailscale ships no `derper` binary, so the role builds it from source **on the
+controller** (your machine) and ships the static binary to the VPS -- keeping the
+heavy compile off the tiny box. That means **Go must be installed locally**
+(`go install tailscale.com/cmd/derper@<ver>` is what it runs). Target arch is
+`derp_build_goarch` (default `amd64`).
+
 ### 3. Run it
 
 ```fish

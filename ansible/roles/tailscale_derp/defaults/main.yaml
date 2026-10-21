@@ -23,13 +23,10 @@ derp_stun_port: 3478
 derp_home: /var/lib/derper
 derp_certdir: "{{ derp_home }}/certs"
 derp_bin: /usr/local/bin/derper
-derp_version_stamp: "{{ derp_home }}/.derper_version"
 # Only clients present in this tailnet may use the relay (needs local tailscaled).
 derp_verify_clients: true
 
-# --- build toolchain (derper is built from the tailscale module) ---
+# --- build (cross-compiled on the Ansible controller; needs Go there) ---
 derper_version: "v1.104.2"
-go_version: "1.27.3"
-go_arch: amd64
-# Optional: set the official tarball checksum to verify the Go download.
-go_tarball_sha256: ""
+derp_build_goos: linux
+derp_build_goarch: amd64

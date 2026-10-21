@@ -49,37 +49,11 @@
       --ssh=false
   changed_when: false
 
-# --- Go toolchain (derper is built from the tailscale module) ---
-- name: Check the installed Go version
-  ansible.builtin.command:
-    cmd: /usr/local/go/bin/go version
-  register: go_installed
-  changed_when: false
-  failed_when: false
-
-- name: Download the pinned Go toolchain
-  ansible.builtin.get_url:
-    url: "https://go.dev/dl/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
-    dest: "/tmp/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
-    checksum: "{{ ('sha256:' ~ go_tarball_sha256) if go_tarball_sha256 else omit }}"
-    mode: "0644"
-  when: "('go version go' ~ go_version) not in (go_installed.stdout | default(''))"
-
-- name: Replace the Go toolchain
-  when: "('go version go' ~ go_version) not in (go_installed.stdout | default(''))"
-  block:
-    - name: Remove any previous Go toolchain
-      ansible.builtin.file:
-        path: /usr/local/go
-        state: absent
-
-    - name: Unpack Go into /usr/local
-      ansible.builtin.unarchive:
-        src: "/tmp/go{{ go_version }}.linux-{{ go_arch }}.tar.gz"
-        dest: /usr/local
-        remote_src: true
-
-# --- derper binary ---
+# --- derper binary (built on the controller, shipped to the VPS) ---
+# Tailscale ships no derper package or binary, so it's built from source. That
+# compile is slow and network-flaky on a 1-core VPS, so build it once on the
+# controller (where there's CPU/RAM + a reliable uplink) and copy the static
+# binary over. Requires Go on the controller.
 - name: Create the derper state directory
   ansible.builtin.file:
     path: "{{ derp_certdir }}"
@@ -88,31 +62,40 @@
     group: root
     mode: "0700"
 
-- name: Read the built derper version
-  ansible.builtin.slurp:
-    src: "{{ derp_version_stamp }}"
-  register: derper_stamp
-  failed_when: false
-
-- name: Build derper at the pinned version
+- name: Build derper for {{ derp_build_goos }}/{{ derp_build_goarch }} on the controller
+  delegate_to: localhost
+  run_once: true
+  become: false # build as the local user (uses your Go cache), not root
   ansible.builtin.command:
-    cmd: "/usr/local/go/bin/go install tailscale.com/cmd/derper@{{ derper_version }}"
+    cmd: "go install tailscale.com/cmd/derper@{{ derper_version }}"
   environment:
-    GOBIN: "{{ derp_bin | dirname }}"
-    GOPATH: /root/go
-    GOCACHE: /root/.cache/go-build
-  when: (derper_stamp.content | default('') | b64decode | trim) != derper_version
-  register: derper_build
-  changed_when: derper_build.rc == 0
+    GOOS: "{{ derp_build_goos }}"
+    GOARCH: "{{ derp_build_goarch }}"
+  changed_when: false
 
-- name: Stamp the built derper version
+- name: Resolve the controller's Go build paths
+  delegate_to: localhost
+  run_once: true
+  become: false
+  ansible.builtin.command:
+    cmd: go env GOPATH GOHOSTOS GOHOSTARCH
+  register: controller_go_env
+  changed_when: false
+
+# go install drops a cross build in bin/<goos>_<goarch>/ but a native build
+# straight in bin/, so choose the path based on whether this is a cross build.
+- name: Ship the derper binary to the VPS
   ansible.builtin.copy:
-    dest: "{{ derp_version_stamp }}"
-    content: "{{ derper_version }}\n"
+    src: >-
+      {{ controller_go_env.stdout_lines[0] }}/bin/{{
+        (derp_build_goos ~ '_' ~ derp_build_goarch ~ '/')
+        if (derp_build_goos != controller_go_env.stdout_lines[1]
+            or derp_build_goarch != controller_go_env.stdout_lines[2])
+        else '' }}derper
+    dest: "{{ derp_bin }}"
     owner: root
     group: root
-    mode: "0644"
-  when: derper_build is changed
+    mode: "0755"
   notify: Restart derper
 
 # --- service ---
@@ -136,8 +119,8 @@
 - name: Next steps -- add the relay to your tailnet and open the ports
   ansible.builtin.debug:
     msg:
-      - "DNS: create A record  {{ derp_hostname }} -> {{ ansible_host | default(inventory_hostname) }}"
-      - "Firewall/provider SG: open  443/tcp, 80/tcp (ACME), 3478/udp"
+      - "DNS: create A record  {{ derp_hostname }} -> {{ derp_bind_ip or ansible_host }}"
+      - "Firewall/provider SG on {{ derp_bind_ip or ansible_host }}: open  443/tcp, 80/tcp (ACME), 3478/udp"
       - "Tailnet ACL -> add a custom DERP region (keep defaults as fallback):"
       - >-
         "derpMap": { "OmitDefaultRegions": false, "Regions": { "900":
