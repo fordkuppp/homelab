@@ -15,5 +15,5 @@ all:
     edge:
       hosts:
         derp-bkk-01:
-          ansible_host: 203.0.113.20 # TODO: replace with the real Bangkok VPS address
+          ansible_host: 117.18.125.45 # ReadyIDC VPS, SSH/management over the 2nd IP
           ansible_user: root

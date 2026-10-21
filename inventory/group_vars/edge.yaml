@@ -1,6 +1,7 @@
 ---
-# Edge node = public-IP Bangkok VPS. For now it runs ONLY a custom Tailscale
-# DERP relay (derper). Caddy public ingress is deferred pending a second IP.
+# Edge node = public-IP Bangkok VPS with TWO public IPs. derper (the DERP
+# relay) owns :443 on the first IP; Caddy (public reverse-proxy) owns :443 on
+# the second. Each gets its own Let's Encrypt cert -- no port collision.
 
 # Tagged Tailscale pre-auth key. NEVER commit -- pass at run time from
 # Bitwarden Secrets Manager, mirroring the wireguard_exit secret handling:
@@ -8,9 +9,27 @@
 #     -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
 tailscale_authkey: "" # runtime only
 
-# Public hostname of the DERP server. Needs an A record -> this VPS's IP so
-# derper's Let's Encrypt (HTTP-01/TLS-ALPN) can validate on :80/:443.
-derp_hostname: "derp.example.com" # TODO
+# Public hostname of the DERP server. A record -> derp_bind_ip so derper's
+# Let's Encrypt (HTTP-01/TLS-ALPN) can validate on :80/:443.
+derp_hostname: "derp.fordkuppp.me"
 
 # Pin near your tailscaled release line. Renovate can bump this.
-derper_version: "v1.78.1" # TODO: confirm against `tailscale version`
+derper_version: "v1.104.2" # current stable, looked up 2026-10-21; Renovate can bump
+
+# --- IP split (two public IPs on this box) ---
+derp_bind_ip: "117.18.125.44"  # first public IP -- derper binds here
+caddy_bind_ip: "117.18.125.45" # second public IP -- Caddy (and SSH)
+
+# The gateway reaches homelab services over the tailnet, so accept the homelab
+# subnet routes on this node (overrides the relay role's default of false).
+tailscale_accept_routes: true
+
+# --- Caddy public sites ---
+caddy_email: "fordpatsakorn@gmail.com"
+# Each site: public hostname (A record -> caddy_bind_ip) -> an upstream the VPS
+# can reach over the tailnet. Use a tailnet 100.x IP, or a homelab LAN IP
+# (works because accept_routes is true above). accept-dns is off on this node,
+# so upstreams must be IPs, not MagicDNS names.
+caddy_sites: [] # TODO
+#   - host: media.example.com
+#     upstream: 192.168.1.3:8096   # jellyfin, via the homelab subnet route

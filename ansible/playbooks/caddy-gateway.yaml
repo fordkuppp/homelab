@@ -1,0 +1,10 @@
+---
+# Public reverse-proxy on the edge VPS's second IP. Terminates HTTPS for your
+# public hostnames and proxies to homelab services over the tailnet (the box is
+# already a tailnet node from the tailscale-derp role). Run tailscale-derp
+# FIRST so derper is rebound to the first IP, freeing the second IP's :443.
+- name: Configure the public reverse-proxy gateway
+  hosts: edge
+  become: true
+  roles:
+    - caddy_gateway

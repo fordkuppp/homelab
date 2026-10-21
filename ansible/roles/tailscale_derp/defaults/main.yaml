@@ -3,14 +3,20 @@
 # Required. Tagged pre-auth key, passed at run time (see group_vars/edge.yaml).
 tailscale_authkey: ""
 tailscale_hostname: "{{ inventory_hostname }}"
-# A relay wants neither tailnet DNS nor subnet routes, and no tailnet SSH.
+# A relay needs no tailnet DNS or SSH. Route acceptance is off by default but
+# flipped on for the edge node (group_vars/edge.yaml) so the co-located Caddy
+# gateway can reach the homelab over the tailnet.
+tailscale_accept_routes: false
 tailscale_up_args: >-
-  --accept-dns=false --accept-routes=false --ssh=false
-  --hostname={{ tailscale_hostname }}
+  --accept-dns=false
+  --accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}
+  --ssh=false --hostname={{ tailscale_hostname }}
 
 # --- DERP relay (derper) ---
 derp_hostname: "derp.example.com"
-# No Caddy yet, so derper owns the standard ports and gets its own cert.
+# Which IP derper's HTTPS listener binds. Empty = all interfaces. Set to the
+# first public IP once Caddy shares the box, so Caddy can own :443 on the second.
+derp_bind_ip: ""
 derp_https_port: 443
 derp_http_port: 80          # HTTP->HTTPS redirect + ACME HTTP-01 challenge
 derp_stun_port: 3478
@@ -22,8 +28,8 @@ derp_version_stamp: "{{ derp_home }}/.derper_version"
 derp_verify_clients: true
 
 # --- build toolchain (derper is built from the tailscale module) ---
-derper_version: "v1.78.1"
-go_version: "1.23.2"
+derper_version: "v1.104.2"
+go_version: "1.27.3"
 go_arch: amd64
 # Optional: set the official tarball checksum to verify the Go download.
 go_tarball_sha256: ""

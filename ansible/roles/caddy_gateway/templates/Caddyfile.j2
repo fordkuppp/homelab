@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+{
+	email {{ caddy_email }}
+	# Keep every listener (incl. the :80 ACME/redirect vhost) on the second
+	# IP so Caddy never touches derper's :443 on the first IP.
+	default_bind {{ caddy_bind_ip }}
+}
+
+{% for site in caddy_sites %}
+{{ site.host }} {
+	reverse_proxy {{ site.upstream }}
+}
+{% endfor %}

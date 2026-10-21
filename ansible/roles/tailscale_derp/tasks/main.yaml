@@ -37,6 +37,18 @@
   register: tailscale_up
   changed_when: tailscale_up.rc == 0
 
+# `tailscale up` only runs on first join, so reconcile the mutable prefs on
+# every run via `tailscale set` -- this is how a later accept-routes flip
+# actually takes effect without re-authing.
+- name: Reconcile tailnet preferences
+  ansible.builtin.command:
+    cmd: >-
+      tailscale set
+      --accept-dns=false
+      --accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}
+      --ssh=false
+  changed_when: false
+
 # --- Go toolchain (derper is built from the tailscale module) ---
 - name: Check the installed Go version
   ansible.builtin.command:
