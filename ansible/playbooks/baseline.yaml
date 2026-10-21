@@ -1,0 +1,8 @@
+---
+# Host baseline: key-only SSH, conffile-safe unattended security upgrades, and
+# fail2ban. Applied to the internet-facing edge VPS.
+- name: Baseline host hardening
+  hosts: edge
+  become: true
+  roles:
+    - baseline

@@ -1,0 +1,77 @@
+---
+# --- SSH hardening (key-only) ---
+- name: Harden sshd
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sshd
+
+# Validate the whole effective config now that the drop-in is in place. If it
+# fails the play aborts before the reload handler runs, so the live sshd keeps
+# its old (working) config and you are not locked out.
+- name: Validate the effective sshd config
+  ansible.builtin.command:
+    cmd: sshd -t
+  changed_when: false
+
+# --- Unattended security updates (conffile-safe) ---
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+    update_cache: true
+  when: baseline_unattended_upgrades
+
+- name: Enable periodic unattended upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+  when: baseline_unattended_upgrades
+
+# Keep existing conffiles non-interactively for ALL apt/dpkg ops -- this is the
+# fix for the cloud-init prompt that wedged dpkg during provisioning.
+- name: Auto-resolve dpkg conffile prompts (keep existing)
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/99force-confold
+    content: |
+      Dpkg::Options {
+        "--force-confdef";
+        "--force-confold";
+      };
+    owner: root
+    group: root
+    mode: "0644"
+  when: baseline_unattended_upgrades
+
+# --- fail2ban ---
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+  when: baseline_fail2ban
+
+- name: Configure the fail2ban sshd jail
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  when: baseline_fail2ban
+  notify: Restart fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+  when: baseline_fail2ban

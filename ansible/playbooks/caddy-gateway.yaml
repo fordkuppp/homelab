@@ -7,4 +7,7 @@
   hosts: edge
   become: true
   roles:
-    - caddy_gateway
+    # Guarded so composite/edge.yml can import this unconditionally; it no-ops
+    # until you define public sites in caddy_sites.
+    - role: caddy_gateway
+      when: caddy_sites | length > 0

@@ -2,7 +2,33 @@
 
 Configuration layer for hosts that are not managed by Flux. Layout follows
 [`docs/structure.md`](../docs/structure.md): inventory lives at the repo root,
-roles and playbooks live here.
+roles and playbooks live here. Per-concern playbooks sit at `playbooks/`;
+composite (whole-machine) playbooks that chain them live in `playbooks/composite/`.
+
+## Provision the whole edge box
+
+`composite/edge.yml` runs the full stack on the `edge` group in order --
+baseline hardening, the DERP relay, then the gateway (which no-ops until
+`caddy_sites` is set):
+
+```fish
+cd ansible
+ansible-playbook playbooks/composite/edge.yml \
+  -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
+```
+
+It uses `import_playbook`, so each concern (`baseline.yml`, `tailscale-derp.yaml`,
+`caddy-gateway.yaml`) stays runnable on its own too.
+
+## baseline
+
+Key-only SSH (`PasswordAuthentication no`, root `prohibit-password`),
+conffile-safe unattended security upgrades (`--force-confdef --force-confold`
+on all apt ops, so an upgrade can't wedge dpkg the way the cloud-init prompt
+did during provisioning), and a fail2ban sshd jail. For the internet-facing
+`edge` box. SSH stays on **public `:22`, key-only** by default -- flip the
+`baseline_*` vars to change password/root policy or drop fail2ban, and restrict
+`:22` to the tailnet via the provider firewall if you want tailnet-only access.
 
 ## tailscale-derp
 
