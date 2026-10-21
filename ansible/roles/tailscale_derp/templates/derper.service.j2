@@ -11,7 +11,7 @@ Requires=tailscaled.service
 # --verify-clients without extra capability/group plumbing on a dedicated box.
 ExecStart={{ derp_bin }} \
   -hostname {{ derp_hostname }} \
-  -a :{{ derp_https_port }} \
+  -a {{ derp_bind_ip }}:{{ derp_https_port }} \
   -http-port {{ derp_http_port }} \
   -stun -stun-port {{ derp_stun_port }} \
   -certmode letsencrypt \

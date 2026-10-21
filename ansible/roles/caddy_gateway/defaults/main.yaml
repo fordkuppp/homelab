@@ -1,0 +1,16 @@
+---
+# The IP Caddy binds -- the VPS's SECOND public IP, so it never collides with
+# derper on the first IP's :443. Required.
+caddy_bind_ip: ""
+
+# ACME account email for Let's Encrypt.
+caddy_email: "you@example.com"
+
+# Public sites. Each entry: a public hostname and the upstream to proxy to,
+# reachable from this node over the tailnet (a 100.x tailnet IP or a homelab
+# LAN IP, the latter needing tailscale_accept_routes: true). Must be IPs, not
+# MagicDNS names, because this node runs with accept-dns off.
+#   caddy_sites:
+#     - host: media.example.com
+#       upstream: 192.168.1.3:8096
+caddy_sites: []
