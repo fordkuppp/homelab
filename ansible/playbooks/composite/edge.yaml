@@ -1,0 +1,8 @@
+---
+# Provision the whole edge VPS in one run: harden the host, stand up the DERP
+# relay, then the public gateway. The gateway play no-ops until caddy_sites is
+# non-empty (see caddy-gateway.yaml). import_playbook paths are relative to
+# this file, so ../ points back to the playbooks root.
+- import_playbook: ../baseline.yaml
+- import_playbook: ../tailscale-derp.yaml
+- import_playbook: ../caddy-gateway.yaml

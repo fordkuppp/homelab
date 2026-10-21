@@ -1,0 +1,15 @@
+---
+# SSH: key-only. Keeps :22 public (no lockout risk) -- restrict it to the
+# tailnet separately if you want that, since the box is a tailnet node.
+baseline_ssh_password_auth: "no"
+baseline_ssh_permit_root: "prohibit-password" # key-based root only
+
+# Unattended security updates, with conffile prompts auto-resolved to keep the
+# existing file -- so an upgrade can never wedge dpkg the way cloud-init did.
+baseline_unattended_upgrades: true
+
+# fail2ban sshd jail.
+baseline_fail2ban: true
+baseline_fail2ban_bantime: "1h"
+baseline_fail2ban_findtime: "10m"
+baseline_fail2ban_maxretry: 5
