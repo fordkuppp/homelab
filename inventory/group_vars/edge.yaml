@@ -24,6 +24,10 @@ caddy_bind_ip: "117.18.125.45" # second public IP -- Caddy (and SSH)
 # subnet routes on this node (overrides the relay role's default of false).
 tailscale_accept_routes: true
 
+# Tag the relay carries. Auto-applied by a tagged auth key; kept explicit so a
+# non-expiring OAuth client secret also works as the key (OAuth needs the tag).
+tailscale_tags: "tag:gateway"
+
 # --- Caddy public sites ---
 caddy_email: "fordpatsakorn@gmail.com"
 # Each site: public hostname (A record -> caddy_bind_ip) -> an upstream the VPS

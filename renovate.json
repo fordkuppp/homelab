@@ -37,6 +37,21 @@
       "/^docker/compose/.+\\.ya?ml$/"
     ]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "DERP relay: track derper against tailscale/tailscale releases",
+      "managerFilePatterns": [
+        "/^ansible/roles/tailscale_derp/defaults/main\\.yaml$/",
+        "/^inventory/group_vars/edge\\.yaml$/"
+      ],
+      "matchStrings": [
+        "derper_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "tailscale/tailscale",
+      "datasourceTemplate": "github-releases"
+    }
+  ],
   "packageRules": [
     {
       "description": "Batch the *arr stack into one PR; they are upgraded together in practice",
