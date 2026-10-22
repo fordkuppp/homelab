@@ -1,8 +1,12 @@
 ---
 # --- Tailscale node ---
-# Required. Tagged pre-auth key, passed at run time (see group_vars/edge.yaml).
+# Required. A tagged pre-auth key OR an OAuth client secret (tskey-client-...,
+# non-expiring), passed at run time (see group_vars/edge.yaml).
 tailscale_authkey: ""
 tailscale_hostname: "{{ inventory_hostname }}"
+# Tags advertised on join. REQUIRED when authing with an OAuth client secret
+# (must be a subset of the client's tags); harmless with a tagged pre-auth key.
+tailscale_tags: ""
 # A relay needs no tailnet DNS or SSH. Route acceptance is off by default but
 # flipped on for the edge node (group_vars/edge.yaml) so the co-located Caddy
 # gateway can reach the homelab over the tailnet.
@@ -11,6 +15,7 @@ tailscale_up_args: >-
   --accept-dns=false
   --accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}
   --ssh=false --hostname={{ tailscale_hostname }}
+  {{ ('--advertise-tags=' ~ tailscale_tags) if tailscale_tags else '' }}
 
 # --- DERP relay (derper) ---
 derp_hostname: "derp.example.com"
