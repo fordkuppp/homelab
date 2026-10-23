@@ -26,15 +26,26 @@ spec:
         kind: HelmRepository
         name: prometheus-community
   values:
-    # Alertmanager is disabled in favour of Grafana unified alerting, so the
-    # rules that watch Alertmanager itself can only ever be false positives.
+    # Alert rules live in Grafana as Grafana-managed rules, imported through
+    # /api/convert/prometheus and editable in the UI -- they are deliberately
+    # not defined in files here. Only the *alerting* groups are switched off
+    # below; every recording group stays on, because dashboards and other
+    # rules depend on the series they produce.
     defaultRules:
       rules:
         alertmanager: false
-      disabled:
-        PrometheusNotConnectedToAlertmanagers: true
-        PrometheusErrorSendingAlertsToSomeAlertmanagers: true
-        PrometheusErrorSendingAlertsToAnyAlertmanager: true
+        configReloaders: false
+        general: false
+        kubeApiserverSlos: false
+        kubeStateMetrics: false
+        kubernetesApps: false
+        kubernetesResources: false
+        kubernetesStorage: false
+        kubernetesSystem: false
+        network: false
+        nodeExporterAlerting: false
+        prometheus: false
+        prometheusOperator: false
     grafana:
       grafana.ini:
         server:
@@ -85,51 +96,6 @@ spec:
             group_wait: 30s
             group_interval: 5m
             repeat_interval: 12h
-        rules.yaml:
-          apiVersion: 1
-          groups:
-          - orgId: 1
-            name: prometheus-passthrough
-            folder: Alerts
-            interval: 1m
-            rules:
-            - uid: prom-alerts-firing
-              title: Prometheus alert firing
-              condition: C
-              for: 2m
-              noDataState: OK
-              execErrState: Error
-              annotations:
-                summary: A Prometheus alert is firing; see labels for which.
-              data:
-              - refId: A
-                relativeTimeRange:
-                  from: 300
-                  to: 0
-                datasourceUid: prometheus
-                model:
-                  refId: A
-                  instant: true
-                  editorMode: code
-                  expr: ALERTS{alertstate="firing", alertname!="Watchdog", severity=~"warning|critical"}
-              - refId: B
-                datasourceUid: __expr__
-                model:
-                  refId: B
-                  type: reduce
-                  reducer: last
-                  expression: A
-              - refId: C
-                datasourceUid: __expr__
-                model:
-                  refId: C
-                  type: threshold
-                  expression: B
-                  conditions:
-                  - evaluator:
-                      type: gt
-                      params:
-                      - 0
     prometheus:
       prometheusSpec:
         enableRemoteWriteReceiver: true
