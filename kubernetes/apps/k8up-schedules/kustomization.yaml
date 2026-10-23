@@ -3,7 +3,6 @@ kind: Kustomization
 resources:
   - pocket-id.yaml
   - postgres.yaml
-  - metrics-exporter.yaml
   - media.yaml
   - actual.yaml
   - dns.yaml

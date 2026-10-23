@@ -54,7 +54,7 @@ spec:
           enabled: true
         database:
           type: postgres
-          host: postgres-rw.postgres.svc.cluster.local:5432
+          host: postgres18-rw.postgres.svc.cluster.local:5432
           name: grafana
           user: grafana
           ssl_mode: disable
@@ -72,7 +72,7 @@ spec:
       - name: TimescaleDB
         uid: cfk814jeejgg0f
         type: grafana-postgresql-datasource
-        url: timescaledb-rw.metrics-exporter.svc.cluster.local:5432
+        url: postgres18-rw.postgres.svc.cluster.local:5432
         user: admin
         jsonData:
           database: metrics_exporter

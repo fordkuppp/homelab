@@ -1,10 +1,15 @@
+# metrics_exporter now lives on the shared postgres18 cluster, which carries
+# the timescaledb extension via a CNPG extension image volume. CNPG Database
+# objects must sit in the same namespace as their Cluster, so this moved from
+# metrics-exporter to postgres.
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: timescaledb-metrics-exporter-db
-  namespace: metrics-exporter
+  name: postgres-metrics-exporter-db
+  namespace: postgres
 spec:
   name: metrics_exporter
   owner: admin
+  databaseReclaimPolicy: retain
   cluster:
-    name: timescaledb
+    name: postgres18
