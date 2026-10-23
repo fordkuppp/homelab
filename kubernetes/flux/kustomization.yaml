@@ -13,6 +13,7 @@ resources:
   - homepage.yaml
   - immich.yaml
   - istio.yaml
+  - kiali.yaml
   - k8up.yaml
   - k8up-schedules.yaml
   - media.yaml
