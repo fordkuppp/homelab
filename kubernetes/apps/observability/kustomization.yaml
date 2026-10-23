@@ -11,3 +11,4 @@ resources:
   - extra-monitors.yaml
   - istio-monitors.yaml
   - grafana-secrets.yaml
+  - grafana-db.yaml
