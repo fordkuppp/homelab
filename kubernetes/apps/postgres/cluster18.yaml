@@ -1,0 +1,61 @@
+# PostgreSQL 18 replacement for the 16.12 cluster, carrying BOTH extensions so
+# the separate timescaledb cluster in metrics-exporter can be retired.
+#
+# This is only possible because CNPG mounts extensions as read-only image
+# volumes rather than baking them into the base image -- one image cannot ship
+# vchord and timescaledb at once. It needs PostgreSQL 18 (extension_control_path
+# is new in 18) and the ImageVolume feature gate, enabled on k3s 2026-10-23.
+#
+# The vchord and timescaledb images are community builds; there is no official
+# vchord extension image, and the official TimescaleDB one is the PGDG +dfsg
+# repack with the TSL code stripped, which would silently remove compression.
+#
+# Image pins are deliberate and must only ever move forward: neither extension
+# supports downgrade, and a TimescaleDB dump can only be restored into the exact
+# version that produced it.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres18
+  namespace: postgres
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  monitoring:
+    enablePodMonitor: true
+  inheritedMetadata:
+    labels:
+      release: kube-prometheus-stack
+    annotations:
+      k8up.io/backup: "false"
+  storage:
+    storageClass: local-path
+    size: 20Gi
+  postgresql:
+    shared_preload_libraries:
+      - vchord
+      - timescaledb
+    extensions:
+      - name: pgvector
+        image:
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-202602120909-18-trixie
+      - name: vchord
+        image:
+          reference: ghcr.io/jdijt/cnpg-vchord:1.1.1-18-trixie
+      - name: timescaledb
+        image:
+          reference: ghcr.io/adampetrovic/timescaledb-cnpg:2.30.2-18-trixie
+  managed:
+    roles:
+      - name: admin
+        ensure: present
+        login: true
+        superuser: true
+        passwordSecret:
+          name: db-secret
+  bootstrap:
+    initdb:
+      database: default
+      owner: admin
+      secret:
+        name: db-secret
