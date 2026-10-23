@@ -8,6 +8,8 @@ spec:
   monitoring:
     enablePodMonitor: true
   inheritedMetadata:
+    labels:
+      release: kube-prometheus-stack
     annotations:
       k8up.io/backup: "false"
   storage:
