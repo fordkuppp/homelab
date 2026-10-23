@@ -8,7 +8,7 @@ spec:
     - name: tailscale-gateway
       namespace: tailscale
   hostnames:
-    - "kiali.local.fordkuppp.me"
+    - "istio.local.fordkuppp.me"
   rules:
     - backendRefs:
         - name: kiali
