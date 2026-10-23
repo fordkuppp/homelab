@@ -5,6 +5,8 @@ metadata:
   namespace: metrics-exporter
 spec:
   instances: 1
+  monitoring:
+    enablePodMonitor: true
   inheritedMetadata:
     annotations:
       k8up.io/backup: "false"
