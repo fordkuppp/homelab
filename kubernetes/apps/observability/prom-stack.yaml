@@ -91,7 +91,7 @@ spec:
               noDataState: OK
               execErrState: Error
               annotations:
-                summary: '{{ $labels.alertname }} firing in {{ $labels.namespace }}'
+                summary: A Prometheus alert is firing; see labels for which.
               data:
               - refId: A
                 relativeTimeRange:
