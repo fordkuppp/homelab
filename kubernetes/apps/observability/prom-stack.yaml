@@ -26,6 +26,15 @@ spec:
         kind: HelmRepository
         name: prometheus-community
   values:
+    # Alertmanager is disabled in favour of Grafana unified alerting, so the
+    # rules that watch Alertmanager itself can only ever be false positives.
+    defaultRules:
+      rules:
+        alertmanager: false
+      disabled:
+        PrometheusNotConnectedToAlertmanagers: true
+        PrometheusErrorSendingAlertsToSomeAlertmanagers: true
+        PrometheusErrorSendingAlertsToAnyAlertmanager: true
     grafana:
       grafana.ini:
         server:
