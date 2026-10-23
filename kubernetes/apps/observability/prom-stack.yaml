@@ -52,6 +52,12 @@ spec:
           domain: grafana.local.fordkuppp.me
         unified_alerting:
           enabled: true
+        database:
+          type: postgres
+          host: postgres-rw.postgres.svc.cluster.local:5432
+          name: grafana
+          user: grafana
+          ssl_mode: disable
       sidecar:
         dashboards:
           provider:
@@ -74,6 +80,10 @@ spec:
           secretKeyRef:
             name: discord-webhook
             key: address
+        GF_DATABASE_PASSWORD:
+          secretKeyRef:
+            name: grafana-db
+            key: password
       alerting:
         contactpoints.yaml:
           apiVersion: 1

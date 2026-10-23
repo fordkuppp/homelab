@@ -1,0 +1,75 @@
+# Grafana's database on the shared CNPG cluster.
+#
+# It holds every alert rule -- they are deliberately not in Git, see the
+# alerting notes in prom-stack.yaml -- plus any dashboard built in the UI. That
+# makes it real state, and it was previously SQLite on the Grafana PVC, which
+# nothing backs up. The `postgres` namespace is already covered by a K8up
+# schedule with a proper pre-backup dump.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: grafana-db
+  namespace: postgres
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      type: kubernetes.io/basic-auth
+      engineVersion: v2
+      data:
+        username: grafana
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: grafana_db_password
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: grafana-db
+  namespace: observability
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      type: Opaque
+      engineVersion: v2
+      data:
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: grafana_db_password
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: postgres-grafana-role
+  namespace: postgres
+spec:
+  name: grafana
+  ensure: present
+  login: true
+  passwordSecret:
+    name: grafana-db
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-grafana-db
+  namespace: postgres
+spec:
+  name: grafana
+  owner: grafana
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres
