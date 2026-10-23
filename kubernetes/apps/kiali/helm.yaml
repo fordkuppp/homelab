@@ -31,6 +31,10 @@ spec:
     deployment:
       view_only_mode: true
     external_services:
+      istio:
+        gateway_api_classes:
+          - name: Envoy Gateway
+            class_name: tailscale-envoy
       prometheus:
         url: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
       grafana:
