@@ -75,7 +75,7 @@ spec:
         url: timescaledb-rw.metrics-exporter.svc.cluster.local:5432
         user: admin
         jsonData:
-          database: admin
+          database: metrics_exporter
           sslmode: disable
           timescaledb: true
         secureJsonData:
