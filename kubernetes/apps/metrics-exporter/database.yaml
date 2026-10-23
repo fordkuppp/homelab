@@ -13,3 +13,23 @@ spec:
   databaseReclaimPolicy: retain
   cluster:
     name: postgres18
+---
+# The exporter's connection URL carries no database path, and it appends the
+# real database name itself. That leaves its *first* connection defaulting to
+# dbname = username = "admin". On the old timescaledb cluster that resolved
+# because its bootstrap database was called admin; postgres18 bootstraps
+# "default", so without this the app fails with:
+#   database "admin" does not exist
+# Putting the database name in the URL instead does not work -- the app appends
+# to it and asks for "metrics_exporter/metrics_exporter".
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-admin-db
+  namespace: postgres
+spec:
+  name: admin
+  owner: admin
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres18
