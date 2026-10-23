@@ -67,6 +67,19 @@ spec:
       - name: Loki
         type: loki
         url: http://loki.observability.svc:3100
+      # uid is pinned: the hand-made Steam metrics dashboard refers to it by
+      # this exact value, so a regenerated one would leave it querying nothing.
+      - name: TimescaleDB
+        uid: cfk814jeejgg0f
+        type: grafana-postgresql-datasource
+        url: timescaledb-rw.metrics-exporter.svc.cluster.local:5432
+        user: admin
+        jsonData:
+          database: admin
+          sslmode: disable
+          timescaledb: true
+        secureJsonData:
+          password: ${TIMESCALEDB_PASSWORD}
       persistence:
         enabled: true
         storageClassName: nfs-csi
@@ -83,6 +96,10 @@ spec:
         GF_DATABASE_PASSWORD:
           secretKeyRef:
             name: grafana-db
+            key: password
+        TIMESCALEDB_PASSWORD:
+          secretKeyRef:
+            name: timescaledb-grafana
             key: password
       alerting:
         contactpoints.yaml:
