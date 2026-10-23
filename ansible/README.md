@@ -1,8 +1,8 @@
 # Ansible
 
 Configuration layer for hosts that are not managed by Flux. Layout follows
-[`docs/structure.md`](../docs/structure.md): inventory lives at the repo root,
-roles and playbooks live here. Per-concern playbooks sit at `playbooks/`;
+[`docs/structure.md`](../docs/structure.md): inventory, roles and playbooks all live
+here. Per-concern playbooks sit at `playbooks/`;
 composite (whole-machine) playbooks that chain them live in `playbooks/composite/`.
 
 ## Provision the whole edge box

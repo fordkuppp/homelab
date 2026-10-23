@@ -43,7 +43,7 @@
       "description": "DERP relay: track derper against tailscale/tailscale releases",
       "managerFilePatterns": [
         "/^ansible/roles/tailscale_derp/defaults/main\\.yaml$/",
-        "/^inventory/group_vars/edge\\.yaml$/"
+        "/^ansible/inventory/group_vars/edge\\.yaml$/"
       ],
       "matchStrings": [
         "derper_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
