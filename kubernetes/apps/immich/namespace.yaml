@@ -4,3 +4,4 @@ metadata:
   name: immich
   labels:
     istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: waypoint

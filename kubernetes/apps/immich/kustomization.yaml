@@ -8,3 +8,4 @@ resources:
   - database.yaml
   - helm.yaml
   - httproute.yaml
+  - waypoint.yaml
