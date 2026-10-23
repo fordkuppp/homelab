@@ -9,3 +9,4 @@ resources:
   - httproute.yaml
   - flux-podmonitor.yaml
   - extra-monitors.yaml
+  - istio-monitors.yaml
