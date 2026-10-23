@@ -5,3 +5,4 @@ resources:
   - helm.yaml
   - secrets.yaml
   - cluster.yaml
+  - cluster18.yaml
