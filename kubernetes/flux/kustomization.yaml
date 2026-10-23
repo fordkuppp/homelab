@@ -12,6 +12,7 @@ resources:
   - gotify.yaml
   - homepage.yaml
   - immich.yaml
+  - istio.yaml
   - k8up.yaml
   - k8up-schedules.yaml
   - media.yaml
