@@ -29,16 +29,18 @@ spec:
     grafana:
       grafana.ini:
         server:
-          domain: "grafana.local.fordkuppp.me"
+          domain: grafana.local.fordkuppp.me
+        unified_alerting:
+          enabled: true
       sidecar:
         dashboards:
           provider:
-            folder: "Built in"
+            folder: Built in
       defaultDashboardsTimezone: Asia/Bangkok
       additionalDataSources:
-        - name: Loki
-          type: loki
-          url: http://loki.observability.svc:3100
+      - name: Loki
+        type: loki
+        url: http://loki.observability.svc:3100
       persistence:
         enabled: true
         storageClassName: nfs-csi
@@ -47,6 +49,78 @@ spec:
           app: grafana
       service:
         type: ClusterIP
+      envValueFrom:
+        DISCORD_WEBHOOK_URL:
+          secretKeyRef:
+            name: discord-webhook
+            key: address
+      alerting:
+        contactpoints.yaml:
+          apiVersion: 1
+          contactPoints:
+          - orgId: 1
+            name: discord
+            receivers:
+            - uid: discord-receiver
+              type: discord
+              settings:
+                url: ${DISCORD_WEBHOOK_URL}
+        policies.yaml:
+          apiVersion: 1
+          policies:
+          - orgId: 1
+            receiver: discord
+            group_by:
+            - alertname
+            - namespace
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 12h
+        rules.yaml:
+          apiVersion: 1
+          groups:
+          - orgId: 1
+            name: prometheus-passthrough
+            folder: Alerts
+            interval: 1m
+            rules:
+            - uid: prom-alerts-firing
+              title: Prometheus alert firing
+              condition: C
+              for: 2m
+              noDataState: OK
+              execErrState: Error
+              annotations:
+                summary: '{{ $labels.alertname }} firing in {{ $labels.namespace }}'
+              data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  editorMode: code
+                  expr: ALERTS{alertstate="firing", alertname!="Watchdog", severity=~"warning|critical"}
+              - refId: B
+                datasourceUid: __expr__
+                model:
+                  refId: B
+                  type: reduce
+                  reducer: last
+                  expression: A
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: B
+                  conditions:
+                  - evaluator:
+                      type: gt
+                      params:
+                      - 0
     prometheus:
       prometheusSpec:
         enableRemoteWriteReceiver: true
@@ -64,13 +138,20 @@ spec:
             spec:
               storageClassName: nfs-csi
               accessModes:
-                - ReadWriteOnce
+              - ReadWriteOnce
               resources:
                 requests:
                   storage: 60Gi
               selector:
                 matchLabels:
                   app: prometheus
-
     alertmanager:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeEtcd:
       enabled: false
