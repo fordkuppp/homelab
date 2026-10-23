@@ -75,6 +75,15 @@ spec:
             name: discord-webhook
             key: address
       alerting:
+        # Removes the retired prom-alerts-firing passthrough. Grafana's file
+        # provisioning never deletes a rule just because it left the file, and
+        # the API refuses to touch anything with provenance=file, so this is
+        # the only way out. Safe to drop once the rule is gone.
+        deleterules.yaml:
+          apiVersion: 1
+          deleteRules:
+          - orgId: 1
+            uid: prom-alerts-firing
         contactpoints.yaml:
           apiVersion: 1
           contactPoints:
