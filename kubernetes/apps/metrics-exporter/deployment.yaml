@@ -23,7 +23,7 @@ spec:
           command:
             - sh
             - -c
-            - "until nc -z timescaledb-rw 5432; do echo 'waiting for timescaledb...'; sleep 2; done"
+            - "until nc -z postgres18-rw.postgres.svc.cluster.local 5432; do echo 'waiting for timescaledb...'; sleep 2; done"
       containers:
         - name: metrics-exporter
           image: ghcr.io/fordkuppp/metrics-exporter:latest

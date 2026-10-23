@@ -10,11 +10,11 @@ spec:
     spec:
       containers:
         - name: dump
-          image: ghcr.io/tensorchord/cloudnative-vectorchord:16.12
+          image: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
           command: ["sleep", "infinity"]
           env:
             - name: PGHOST
-              value: postgres-rw
+              value: postgres18-rw
             - name: PGUSER
               valueFrom:
                 secretKeyRef:

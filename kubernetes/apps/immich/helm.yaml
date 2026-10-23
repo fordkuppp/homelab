@@ -26,7 +26,7 @@ spec:
         containers:
           main:
             env:
-              DB_HOSTNAME: "postgres-rw.postgres.svc.cluster.local"
+              DB_HOSTNAME: "postgres18-rw.postgres.svc.cluster.local"
               DB_USERNAME: admin
               DB_PASSWORD:
                 valueFrom:

@@ -60,7 +60,7 @@ spec:
   passwordSecret:
     name: grafana-db
   cluster:
-    name: postgres
+    name: postgres18
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
@@ -72,4 +72,4 @@ spec:
   owner: grafana
   databaseReclaimPolicy: retain
   cluster:
-    name: postgres
+    name: postgres18
