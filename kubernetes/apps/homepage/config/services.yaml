@@ -15,6 +15,10 @@
         icon: pocket-id
         href: https://id.local.fordkuppp.me
         description: Identity provider
+    - Istio:
+        icon: istio
+        href: https://istio.local.fordkuppp.me
+        description: Service mesh
 - Media:
     - Jellyfin:
         icon: jellyfin
