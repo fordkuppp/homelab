@@ -7,3 +7,4 @@ resources:
   - loki.yaml
   - otel-collector.yaml
   - httproute.yaml
+  - flux-podmonitor.yaml
