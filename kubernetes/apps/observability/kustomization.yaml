@@ -8,3 +8,4 @@ resources:
   - otel-collector.yaml
   - httproute.yaml
   - flux-podmonitor.yaml
+  - extra-monitors.yaml
