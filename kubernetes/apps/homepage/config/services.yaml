@@ -61,6 +61,10 @@
         icon: syncthing
         href: https://sync.local.fordkuppp.me
         description: File synchronization
+    - FreshRSS:
+        icon: freshrss
+        href: https://rss.local.fordkuppp.me
+        description: Feed reader
     - Gotify:
         icon: gotify
         href: https://gotify.local.fordkuppp.me

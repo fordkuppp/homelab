@@ -1,0 +1,51 @@
+# FreshRSS keeps feeds, entries and read state in Postgres. Only the
+# configuration, favicons and extensions stay on disk, so the bulk of the data
+# is covered by the nightly pg_dumpall in the postgres namespace -- no change
+# is needed there, a new database is picked up automatically.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: freshrss-db
+  namespace: postgres
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      type: kubernetes.io/basic-auth
+      engineVersion: v2
+      data:
+        username: freshrss
+        password: "{{ .password }}"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: freshrss_db_password
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: postgres-freshrss-role
+  namespace: postgres
+spec:
+  name: freshrss
+  ensure: present
+  login: true
+  passwordSecret:
+    name: freshrss-db
+  cluster:
+    name: postgres18
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: postgres-freshrss-db
+  namespace: postgres
+spec:
+  name: freshrss
+  owner: freshrss
+  databaseReclaimPolicy: retain
+  cluster:
+    name: postgres18
