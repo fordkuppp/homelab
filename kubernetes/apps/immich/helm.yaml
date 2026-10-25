@@ -8,7 +8,7 @@ spec:
   provider: generic
   url: oci://ghcr.io/immich-app/immich-charts/immich
   ref:
-    tag: 0.10.3
+    tag: 0.13.4
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
