@@ -19,9 +19,10 @@ metadata:
   labels:
     release: kube-prometheus-stack
 spec:
+  # any: true to match the other PodMonitors here; the label selector below is
+  # specific enough on its own -- only Envoy Gateway's proxy pods carry both.
   namespaceSelector:
-    matchNames:
-      - envoy-gateway-system
+    any: true
   selector:
     matchLabels:
       app.kubernetes.io/name: envoy
