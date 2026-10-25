@@ -1,7 +1,21 @@
+# Deliberately NOT enrolled in the ambient mesh.
+#
+# ztunnel's DNS proxy (ISTIO_META_DNS_CAPTURE=true in apps/istio/helm.yaml)
+# returns NODATA answers without the SOA record that CoreDNS puts in the
+# authority section. glibc's resolver treats an empty NOERROR with no
+# authority as a server failure rather than "no such record type", so PHP's
+# dns_get_record() returns false with "A temporary server error occurred".
+#
+# FreshRSS calls dns_get_record($host, DNS_A + DNS_AAAA) before every fetch,
+# as an SSRF guard, and treats false as "failed to resolve domain". Any feed
+# whose host has no AAAA record -- github.com among them -- is therefore
+# unfetchable while this namespace is in the mesh. Verified by running the
+# same image in an ambient and a non-ambient namespace:
+#   ambient      github.com AAAA -> NOERROR ancount=0 nscount=0
+#   non-ambient  github.com AAAA -> NOERROR ancount=0 nscount=1
 apiVersion: v1
 kind: Namespace
 metadata:
   name: freshrss
   labels:
-    istio.io/dataplane-mode: ambient
     k8up-backup: enabled
