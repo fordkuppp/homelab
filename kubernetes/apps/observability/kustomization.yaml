@@ -12,3 +12,4 @@ resources:
   - istio-monitors.yaml
   - grafana-secrets.yaml
   - grafana-db.yaml
+  - envoy-proxy-monitor.yaml
