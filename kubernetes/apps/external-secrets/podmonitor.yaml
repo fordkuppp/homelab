@@ -1,0 +1,28 @@
+# external-secrets was not being scraped at all. That matters more than it
+# looks: when ESO stops syncing, nothing breaks loudly -- secrets simply go
+# stale, and the failure only surfaces later as an app that cannot
+# authenticate. The stale Bitwarden SDK certificate has caused exactly that.
+#
+# A PodMonitor rather than a ServiceMonitor because the chart creates no
+# Service for the controller; only the webhook and the SDK server have one.
+# The controller serves metrics on port 8080 (--metrics-addr=:8080).
+#
+# Useful series this brings in:
+#   externalsecret_status_condition          per-ExternalSecret Ready state
+#   externalsecret_sync_calls_error          sync failures
+#   clustersecretstore_status_condition      health of the Bitwarden store itself
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: external-secrets
+  namespace: external-secrets
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: external-secrets
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 60s
