@@ -7,5 +7,6 @@ resources:
   - actual.yaml
   - dns.yaml
   - gotify.yaml
+  - freshrss.yaml
   - syncthing.yaml
   - uptime-kuma.yaml

@@ -1,0 +1,27 @@
+# Both volumes are small and on local-path, backed up to R2 by the Schedule in
+# k8up-schedules. data/ holds config.php, per-user config and favicons;
+# extensions/ holds anything installed from the FreshRSS extension manager,
+# which would otherwise be lost on every pod restart.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: freshrss-data-pvc
+  namespace: freshrss
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: freshrss-extensions-pvc
+  namespace: freshrss
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi

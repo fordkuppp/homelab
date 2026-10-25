@@ -8,6 +8,7 @@ resources:
   - external.yaml
   - external-secrets.yaml
   - flux-noti.yaml
+  - freshrss.yaml
   - gateway.yaml
   - gotify.yaml
   - homepage.yaml
