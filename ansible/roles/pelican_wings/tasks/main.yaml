@@ -1,0 +1,88 @@
+---
+- name: Fail fast on missing node credentials
+  ansible.builtin.assert:
+    that:
+      - pelican_node_uuid | length > 0
+      - pelican_node_token_id | length > 0
+      - pelican_node_token | length > 0
+    fail_msg: >-
+      Node credentials are unset. The Panel generates them when you create the
+      Node (Admin -> Nodes -> Create); there is no API to bootstrap them cold.
+      Store them in Bitwarden and pass at run time -- see docs/runbooks/pelican.md.
+
+- name: Create the Wings directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  loop:
+    - "{{ pelican_wings_config_dir }}"
+    - "{{ pelican_wings_root }}"
+    - "{{ pelican_wings_data }}"
+    - "{{ pelican_wings_backup_dir }}"
+
+# Backups go straight to TrueNAS so world data outlives the VM. `soft` so a NAS
+# outage stalls backups instead of wedging every process that touches the path.
+- name: Mount the TrueNAS backup share at Wings' backup directory
+  ansible.posix.mount:
+    path: "{{ pelican_wings_backup_dir }}"
+    src: "{{ pelican_backup_nfs_server }}:{{ pelican_backup_nfs_export }}"
+    fstype: nfs
+    opts: "rw,soft,nfsvers=4,_netdev"
+    state: mounted
+
+# The checksums URL is versioned alongside the binary, so this verifies the
+# download without pinning a digest that every Renovate bump would invalidate.
+- name: Install the Wings binary
+  ansible.builtin.get_url:
+    url: "{{ _pelican_wings_release }}/wings_linux_{{ pelican_wings_arch }}"
+    checksum: "sha256:{{ _pelican_wings_release }}/checksums.txt"
+    dest: "{{ pelican_wings_bin }}"
+    owner: root
+    group: root
+    mode: "0755"
+  vars:
+    _pelican_wings_release: >-
+      https://github.com/pelican/wings/releases/download/{{ pelican_wings_version }}
+  notify: Restart wings
+
+- name: Render the Wings configuration
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ pelican_wings_config_dir }}/config.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true # carries the node token
+  notify: Restart wings
+
+- name: Install the wings systemd unit
+  ansible.builtin.template:
+    src: wings.service.j2
+    dest: /etc/systemd/system/wings.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart wings
+
+- name: Enable and start wings
+  ansible.builtin.systemd:
+    name: wings
+    enabled: true
+    state: started
+
+- name: Next steps -- wire this node into the public gateway
+  ansible.builtin.debug:
+    msg:
+      - "Wings API (via the cluster gateway): https://{{ pelican_wings_fqdn }}"
+      - "Tailnet IPv4 of this node: {{ tailscale_ipv4 | default('unknown -- run the tailscale_node role') }}"
+      - "Set this in inventory/group_vars/edge.yaml so Caddy can forward Minecraft:"
+      - >-
+        caddy_l4_routes:
+        [{ listen_port: 25565,
+        upstream: "{{ tailscale_ipv4 | default('<tailnet-ip>') }}:25565" }]
+      - "Then: ansible-playbook playbooks/caddy-gateway.yaml"
