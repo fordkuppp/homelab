@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pelican
+  labels:
+    # Selects this namespace into the k8up-repo ClusterExternalSecret.
+    k8up-backup: enabled

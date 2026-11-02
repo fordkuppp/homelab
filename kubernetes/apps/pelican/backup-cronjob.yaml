@@ -1,0 +1,66 @@
+# k8up/restic copies the SQLite file byte-for-byte, which tears if a write
+# lands mid-copy. VACUUM INTO takes a consistent copy twenty minutes ahead of
+# the k8up schedule, so the restic snapshot always contains one database that
+# is known to be restorable.
+#
+# Running the panel's own image avoids a second image to track and guarantees
+# the uid and the SQLite build match the writer. It ships no sqlite3 CLI, but
+# its PHP has the sqlite3 extension, and VACUUM INTO is the same mechanism the
+# `.backup` dot-command uses.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pelican-sqlite-snapshot
+  namespace: pelican
+spec:
+  schedule: "55 2 * * *"
+  timeZone: Asia/Bangkok
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          enableServiceLinks: false
+          securityContext:
+            runAsUser: 82
+            runAsGroup: 82
+            fsGroup: 82
+          containers:
+            - name: snapshot
+              image: ghcr.io/pelican/panel:v1.0.0-rc.2
+              command:
+                - php
+                - -r
+                - |
+                  $src = '/pelican-data/database/database.sqlite';
+                  $dst = '/pelican-data/snapshots/panel.sqlite';
+                  if (!is_file($src)) {
+                      fwrite(STDERR, "no database at {$src} yet -- the panel installer has not run\n");
+                      exit(0);
+                  }
+                  if (!is_dir(dirname($dst)) && !mkdir(dirname($dst), 0750, true)) {
+                      fwrite(STDERR, "cannot create " . dirname($dst) . "\n");
+                      exit(1);
+                  }
+                  $tmp = $dst . '.tmp';
+                  @unlink($tmp);
+                  $db = new SQLite3($src, SQLITE3_OPEN_READONLY);
+                  // Without this, a failed VACUUM is a warning and the job still exits 0.
+                  $db->enableExceptions(true);
+                  $db->exec("VACUUM INTO '{$tmp}'");
+                  $db->close();
+                  if (!rename($tmp, $dst)) {
+                      fwrite(STDERR, "cannot move {$tmp} into place\n");
+                      exit(1);
+                  }
+                  fwrite(STDERR, "snapshot written to {$dst}\n");
+              volumeMounts:
+                - name: data
+                  mountPath: /pelican-data
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: pelican-data-pvc

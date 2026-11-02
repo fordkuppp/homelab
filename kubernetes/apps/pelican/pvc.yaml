@@ -1,0 +1,14 @@
+# local-path, not nfs-csi: the Panel's database is SQLite, and SQLite locking
+# over NFS is a known corruption path. local-path is a dynamic provisioner, so
+# unlike the nfs-csi apps here there is no hand-written PersistentVolume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pelican-data-pvc
+  namespace: pelican
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
