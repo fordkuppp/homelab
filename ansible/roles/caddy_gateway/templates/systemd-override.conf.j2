@@ -1,0 +1,13 @@
+{{ ansible_managed | comment }}
+# The apt package provides the unit, the `caddy` user and /etc/caddy, but its
+# binary has no caddy-l4 and cannot parse the layer4 block. Point the unit at
+# the custom build instead, so an apt upgrade of the package cannot silently
+# revert us to a Caddy that drops every game connection.
+#
+# The empty assignments are required: systemd APPENDS to Exec* lists in a
+# drop-in unless the list is cleared first.
+[Service]
+ExecStart=
+ExecStart={{ caddy_custom_bin }} run --environ --config /etc/caddy/Caddyfile
+ExecReload=
+ExecReload={{ caddy_custom_bin }} reload --config /etc/caddy/Caddyfile --force

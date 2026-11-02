@@ -4,6 +4,21 @@
 	# Keep every listener (incl. the :80 ACME/redirect vhost) on the second
 	# IP so Caddy never touches derper's :443 on the first IP.
 	default_bind {{ caddy_bind_ip }}
+{% if caddy_l4_routes %}
+
+	# Raw TCP (game servers). default_bind does NOT apply to layer4 listeners,
+	# so the bind IP is explicit here -- otherwise these listen on 0.0.0.0 and
+	# spill onto derper's IP.
+	layer4 {
+{% for route in caddy_l4_routes %}
+		{{ caddy_bind_ip }}:{{ route.listen_port }} {
+			route {
+				proxy {{ route.upstream }}
+			}
+		}
+{% endfor %}
+	}
+{% endif %}
 }
 
 {% for site in caddy_sites %}

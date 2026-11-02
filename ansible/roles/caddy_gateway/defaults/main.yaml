@@ -14,3 +14,27 @@ caddy_email: "you@example.com"
 #     - host: media.example.com
 #       upstream: 192.168.1.3:8096
 caddy_sites: []
+
+# --- Layer 4 (raw TCP) routes ---
+# Stock Caddy only speaks HTTP. Game protocols like Minecraft are raw TCP,
+# which needs the caddy-l4 module and therefore a custom xcaddy build (below).
+# Each entry: a port to listen on (bound to caddy_bind_ip) and an upstream this
+# node can reach over the tailnet.
+#   caddy_l4_routes:
+#     - listen_port: 25565
+#       upstream: 100.64.0.5:25565
+caddy_l4_routes: []
+
+# --- Custom build (cross-compiled on the Ansible controller; needs Go there) ---
+# Pinned so a rebuild is reproducible and Renovate can propose bumps. The apt
+# package stays installed for its unit, its `caddy` user and /etc/caddy; a
+# systemd drop-in points ExecStart at the custom binary so an apt upgrade can
+# never silently restore a plugin-less Caddy.
+caddy_version: "v2.11.7"
+caddy_l4_version: "v0.1.2"
+caddy_custom_bin: /usr/local/bin/caddy
+caddy_build_goos: linux
+caddy_build_goarch: amd64
+# Version-stamped on the controller, so a bump forces a rebuild while a repeat
+# run at the same versions is a no-op.
+caddy_build_artifact: "/tmp/caddy-{{ caddy_version }}-l4-{{ caddy_l4_version }}"

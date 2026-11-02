@@ -3,10 +3,10 @@
   ansible.builtin.assert:
     that:
       - caddy_bind_ip | length > 0
-      - caddy_sites | length > 0
+      - (caddy_sites | length > 0) or (caddy_l4_routes | length > 0)
     fail_msg: >-
       Set caddy_bind_ip (the VPS's second public IP) and at least one entry in
-      caddy_sites in inventory/group_vars/edge.yaml.
+      caddy_sites or caddy_l4_routes in inventory/group_vars/edge.yaml.
 
 - name: Install prerequisites for the Caddy apt repository
   ansible.builtin.apt:
@@ -40,6 +40,70 @@
     state: present
     update_cache: true
 
+# --- Custom binary with caddy-l4 (built on the controller, shipped to the VPS) ---
+# Same reasoning as derper: the VPS is a small box, so compile where there is
+# CPU and a reliable uplink. Requires Go on the controller.
+- name: Install xcaddy on the controller
+  delegate_to: localhost
+  run_once: true
+  become: false # build as the local user (uses your Go cache), not root
+  ansible.builtin.command:
+    cmd: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+  changed_when: false
+
+- name: Resolve the controller's Go build paths
+  delegate_to: localhost
+  run_once: true
+  become: false
+  ansible.builtin.command:
+    cmd: go env GOPATH
+  register: caddy_go_env
+  changed_when: false
+
+- name: Build Caddy with caddy-l4 for {{ caddy_build_goos }}/{{ caddy_build_goarch }}
+  delegate_to: localhost
+  run_once: true
+  become: false
+  ansible.builtin.command:
+    cmd: >-
+      {{ caddy_go_env.stdout }}/bin/xcaddy build {{ caddy_version }}
+      --with github.com/mholt/caddy-l4@{{ caddy_l4_version }}
+      --output {{ caddy_build_artifact }}
+    creates: "{{ caddy_build_artifact }}"
+  environment:
+    GOOS: "{{ caddy_build_goos }}"
+    GOARCH: "{{ caddy_build_goarch }}"
+
+- name: Ship the custom Caddy binary to the VPS
+  ansible.builtin.copy:
+    src: "{{ caddy_build_artifact }}"
+    dest: "{{ caddy_custom_bin }}"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart Caddy
+
+- name: Create the Caddy systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/caddy.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Point the systemd unit at the custom binary
+  ansible.builtin.template:
+    src: systemd-override.conf.j2
+    dest: /etc/systemd/system/caddy.service.d/10-custom-binary.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart Caddy
+
+# Validated with the custom binary on purpose: the apt one has no layer4 and
+# would reject a Caddyfile that is in fact correct.
 - name: Render the Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
@@ -47,7 +111,7 @@
     owner: root
     group: root
     mode: "0644"
-    validate: "caddy validate --adapter caddyfile --config %s"
+    validate: "{{ caddy_custom_bin }} validate --adapter caddyfile --config %s"
   notify: Reload Caddy
 
 - name: Enable and start Caddy

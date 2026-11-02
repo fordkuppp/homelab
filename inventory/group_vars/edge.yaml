@@ -37,3 +37,19 @@ caddy_email: "fordpatsakorn@gmail.com"
 caddy_sites: [] # TODO
 #   - host: media.example.com
 #     upstream: 192.168.1.3:8096   # jellyfin, via the homelab subnet route
+
+# --- Raw TCP forwards (game servers) ---
+# Minecraft is not HTTP, so this needs the caddy-l4 module -- the role builds a
+# custom Caddy for it. The upstream is wings-1's TAILNET address, not its LAN
+# address: the VPS reaches it peer-to-peer, keeping the cluster's subnet router
+# out of the player data path. The pelican_wings role prints the value to use.
+# Also needs an A record mc.fordkuppp.me -> caddy_bind_ip with the Cloudflare
+# proxy OFF (it does not carry raw TCP), and 25565/tcp open in the provider SG.
+caddy_l4_routes: [] # set the upstream once wings-1 has joined the tailnet
+#   - listen_port: 25565
+#     upstream: 100.x.y.z:25565
+
+# --- Custom Caddy build (needs Go on the Ansible controller) ---
+# Renovate tracks both.
+caddy_version: "v2.11.7"
+caddy_l4_version: "v0.1.2"
