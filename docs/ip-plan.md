@@ -22,8 +22,12 @@
 ### Kubernetes cluster node
 - `192.168.1.20–192.168.1.29`
 
-### Komodo docker
+### Game servers
 - `192.168.1.30–192.168.1.39`
+- `192.168.1.30` — wings-1 (Pelican Wings)
+
+> Formerly the Komodo docker range. Komodo is retired; `docker-1` held `.30`
+> and was decommissioned when wings-1 took the address.
 
 ### Metallb
 - `192.168.1.40–192.168.1.59`
