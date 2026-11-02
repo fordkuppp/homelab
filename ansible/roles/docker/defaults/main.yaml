@@ -1,0 +1,15 @@
+---
+# Docker's own apt repo rather than Ubuntu's `docker.io`: the distro package
+# lags by releases and Wings talks to the Engine API directly.
+docker_apt_key_url: https://download.docker.com/linux/ubuntu/gpg
+docker_apt_keyring: /etc/apt/keyrings/docker.asc
+docker_apt_repo_url: https://download.docker.com/linux/ubuntu
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+# Containers that fill a disk should not take the host down with them.
+docker_log_max_size: "10m"
+docker_log_max_file: "3"
