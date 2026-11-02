@@ -1,0 +1,10 @@
+---
+# Pelican Wings: the daemon that owns the game containers. The Panel half lives
+# in k3s (kubernetes/apps/pelican). Wings joins the tailnet first so the role's
+# closing message can print the address the edge gateway forwards to.
+- name: Pelican Wings host
+  hosts: games
+  become: true
+  roles:
+    - tailscale_node
+    - pelican_wings
