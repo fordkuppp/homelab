@@ -1,0 +1,4 @@
+---
+# derper needs a local tailscaled to --verify-clients against the tailnet.
+dependencies:
+  - role: tailscale_node
