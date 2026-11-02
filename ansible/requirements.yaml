@@ -1,0 +1,12 @@
+---
+# Install with: ansible-galaxy collection install -r requirements.yaml
+#
+# Both ship inside the `ansible` community package, so a controller installed
+# that way already has them. Declared anyway so a controller running bare
+# `ansible-core` is a documented one-liner rather than a confusing
+# "couldn't resolve module ansible.posix.mount" failure.
+collections:
+  - name: ansible.posix
+    version: ">=1.5.0"
+  - name: community.general
+    version: ">=8.0.0"

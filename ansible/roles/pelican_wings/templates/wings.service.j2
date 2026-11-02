@@ -1,0 +1,20 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Pelican Wings Daemon
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+User=root
+WorkingDirectory={{ pelican_wings_config_dir }}
+LimitNOFILE=4096
+PIDFile=/var/run/wings/daemon.pid
+ExecStart={{ pelican_wings_bin }}
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

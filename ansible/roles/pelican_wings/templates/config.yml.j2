@@ -1,0 +1,33 @@
+{{ ansible_managed | comment }}
+debug: false
+uuid: {{ pelican_node_uuid }}
+token_id: {{ pelican_node_token_id }}
+token: {{ pelican_node_token }}
+
+api:
+  host: 0.0.0.0
+  port: 8080
+  # TLS is terminated by the Envoy gateway in front of this node, so Wings
+  # itself speaks plain HTTP. See the spec, decision D2.
+  ssl:
+    enabled: false
+  upload_limit: {{ pelican_wings_upload_limit }}
+  trusted_proxies:
+{% for cidr in pelican_wings_trusted_proxies %}
+    - "{{ cidr }}"
+{% endfor %}
+
+system:
+  root_directory: {{ pelican_wings_root }}
+  data: {{ pelican_wings_data }}
+  backup_directory: {{ pelican_wings_backup_dir }}
+  username: pelican
+  timezone: {{ pelican_wings_timezone }}
+  sftp:
+    bind_address: 0.0.0.0
+    bind_port: 2022
+
+remote: {{ pelican_panel_url }}
+
+allowed_origins:
+  - "{{ pelican_panel_url }}"
