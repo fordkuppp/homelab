@@ -1,5 +1,18 @@
 ---
+# Handlers fire in DEFINITION order, not notification order, so the
+# daemon-reload must be declared before the restart that depends on it.
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 - name: Reload Caddy
   ansible.builtin.systemd:
     name: caddy
     state: reloaded
+
+# A Caddyfile change only needs a reload; swapping the binary or the unit
+# needs the process replaced.
+- name: Restart Caddy
+  ansible.builtin.systemd:
+    name: caddy
+    state: restarted
