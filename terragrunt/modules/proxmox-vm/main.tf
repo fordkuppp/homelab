@@ -14,11 +14,6 @@ resource "proxmox_virtual_environment_file" "cloudinit_file" {
 ssh_pwauth: true
 groups:
   - docker
-apt:
-  sources:
-    docker.list:
-      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
-      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
 users:
   - name: ubuntu
     lock_passwd: false
@@ -29,7 +24,9 @@ users:
     shell: /bin/bash
     ssh_authorized_keys:
       - "${trimspace(var.ssh_public_key)}"
-    sudo: ALL=(ALL) ALL
+    # Ansible drives these hosts unattended; password sudo would need the
+    # account password threaded through every play.
+    sudo: ALL=(ALL) NOPASSWD:ALL
 package_update: true
 apt:
   sources:
