@@ -75,6 +75,11 @@ one-shot), store it in Bitwarden Secrets Manager, and declare its tag's
 `tagOwners` in your tailnet policy. The private half is passed at run time and
 never committed.
 
+If the tailnet has **device approval** enabled, tick **Pre-approved** on the
+key. Without it the node authenticates but parks in `NeedsMachineAuth` until an
+admin approves it at <https://login.tailscale.com/admin/machines>, and the play
+fails after `tailscale_up_timeout` (60s) rather than joining.
+
 ### 2. Point the inventory at the VPS
 
 Set `ansible_host` for `derp-bkk-01` in `inventory/hosts.yaml`, and the real
@@ -249,7 +254,8 @@ so this order is not negotiable:
 
 The tailnet auth key is separate: create a **tagged** pre-auth key for
 `tag:games` (declare the tag in `tagOwners` first) and export its id as
-`BWS_TS_GAMES_AUTHKEY_ID`.
+`BWS_TS_GAMES_AUTHKEY_ID`. Tick **Pre-approved** if device approval is on --
+see [Get a tagged auth key](#1-get-a-tagged-auth-key).
 
 ### 2. Run it
 
