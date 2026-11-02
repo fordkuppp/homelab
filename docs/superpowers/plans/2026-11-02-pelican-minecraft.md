@@ -93,7 +93,7 @@ A VM whose configuration is entirely Ansible's job should not have to pass a dum
 - Modify: `terragrunt/modules/proxmox-vm/variables.tf`
 - Modify: `terragrunt/modules/proxmox-vm/main.tf`
 
-- [ ] **Step 1: Give the variable a default**
+- [x] **Step 1: Give the variable a default**
 
 In `terragrunt/modules/proxmox-vm/variables.tf`, replace:
 
@@ -114,7 +114,7 @@ variable "user_data" {
 }
 ```
 
-- [ ] **Step 2: Skip the script when it is empty**
+- [x] **Step 2: Skip the script when it is empty**
 
 In `terragrunt/modules/proxmox-vm/main.tf`, the cloud-init heredoc writes `/usr/local/bin/user-data.sh` and always runs it. Make both conditional. Replace:
 
@@ -153,7 +153,7 @@ EOF
 A template directive rather than a nested heredoc: HCL will not parse a
 heredoc opened inside an interpolation that is itself inside a heredoc.
 
-- [ ] **Step 3: Verify the existing VMs still render identically**
+- [x] **Step 3: Verify the existing VMs still render identically**
 
 Run:
 
@@ -164,7 +164,7 @@ terragrunt hcl validate --working-dir terragrunt/proxmox/vm/k3s-1
 
 Expected: both exit 0. `docker-1` and `k3s-1` both pass a non-empty `user_data`, so their rendered cloud-init must be unchanged.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add terragrunt/modules/proxmox-vm/
@@ -181,7 +181,7 @@ should not have to pass a no-op script to satisfy a required variable."
 **Files:**
 - Create: `terragrunt/proxmox/vm/wings-1/terragrunt.hcl`
 
-- [ ] **Step 1: Write the terragrunt config**
+- [x] **Step 1: Write the terragrunt config**
 
 Modelled on `k3s-1/terragrunt.hcl`. No `user_data` — Task 1 made it optional.
 
@@ -231,12 +231,12 @@ inputs = {
 }
 ```
 
-- [ ] **Step 2: Validate**
+- [x] **Step 2: Validate**
 
 Run: `terragrunt hcl validate --working-dir terragrunt/proxmox/vm/wings-1`
 Expected: exit 0, no output.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add terragrunt/proxmox/vm/wings-1/
@@ -258,7 +258,7 @@ git commit -m "Add the wings-1 VM
 - Modify: `ansible/roles/tailscale_derp/tasks/main.yaml`
 - Modify: `ansible/roles/tailscale_derp/defaults/main.yaml`
 
-- [ ] **Step 1: Create the new role's tasks**
+- [x] **Step 1: Create the new role's tasks**
 
 `ansible/roles/tailscale_node/tasks/main.yaml` — moved verbatim from `tailscale_derp`:
 
@@ -326,7 +326,7 @@ git commit -m "Add the wings-1 VM
 
 The last two tasks are new: the Caddy L4 upstream needs this node's tailnet address, and printing it beats looking it up by hand.
 
-- [ ] **Step 2: Create the new role's defaults**
+- [x] **Step 2: Create the new role's defaults**
 
 `ansible/roles/tailscale_node/defaults/main.yaml` — the `--- Tailscale node ---` half of the derp role's defaults:
 
@@ -350,7 +350,7 @@ tailscale_up_args: >-
   {{ ('--advertise-tags=' ~ tailscale_tags) if tailscale_tags else '' }}
 ```
 
-- [ ] **Step 3: Declare the dependency from `tailscale_derp`**
+- [x] **Step 3: Declare the dependency from `tailscale_derp`**
 
 Create `ansible/roles/tailscale_derp/meta/main.yaml`:
 
@@ -361,7 +361,7 @@ dependencies:
   - role: tailscale_node
 ```
 
-- [ ] **Step 4: Remove the extracted tasks from `tailscale_derp`**
+- [x] **Step 4: Remove the extracted tasks from `tailscale_derp`**
 
 In `ansible/roles/tailscale_derp/tasks/main.yaml`, delete everything from `- name: Fail fast when the Tailscale auth key is missing` through the end of `- name: Reconcile tailnet preferences` (lines 2–50). The file now begins:
 
@@ -377,7 +377,7 @@ In `ansible/roles/tailscale_derp/tasks/main.yaml`, delete everything from `- nam
 
 Leave everything from that task onward untouched.
 
-- [ ] **Step 5: Remove the extracted defaults from `tailscale_derp`**
+- [x] **Step 5: Remove the extracted defaults from `tailscale_derp`**
 
 In `ansible/roles/tailscale_derp/defaults/main.yaml`, delete the block from `# --- Tailscale node ---` through the `tailscale_up_args` definition. The file now begins:
 
@@ -387,7 +387,7 @@ In `ansible/roles/tailscale_derp/defaults/main.yaml`, delete the block from `# -
 derp_hostname: "derp.example.com"
 ```
 
-- [ ] **Step 6: Verify the derp playbook still resolves**
+- [x] **Step 6: Verify the derp playbook still resolves**
 
 Run from the `ansible/` directory:
 
@@ -397,7 +397,7 @@ cd ansible && ansible-playbook --syntax-check playbooks/tailscale-derp.yaml
 
 Expected: `playbook: playbooks/tailscale-derp.yaml`, exit 0. A syntax check resolves role dependencies, so a missing `tailscale_node` or a typo in `meta/main.yaml` fails here.
 
-- [ ] **Step 7: Verify the composite edge playbook still resolves**
+- [x] **Step 7: Verify the composite edge playbook still resolves**
 
 ```bash
 cd ansible && ansible-playbook --syntax-check playbooks/composite/edge.yaml
@@ -405,7 +405,7 @@ cd ansible && ansible-playbook --syntax-check playbooks/composite/edge.yaml
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add ansible/roles/tailscale_node/ ansible/roles/tailscale_derp/
@@ -428,7 +428,7 @@ needs."
 - Create: `ansible/roles/pelican_wings/templates/config.yml.j2`
 - Create: `ansible/roles/pelican_wings/templates/wings.service.j2`
 
-- [ ] **Step 1: Defaults**
+- [x] **Step 1: Defaults**
 
 `ansible/roles/pelican_wings/defaults/main.yaml`:
 
@@ -470,7 +470,7 @@ pelican_backup_nfs_server: "192.168.1.11"
 pelican_backup_nfs_export: "/mnt/general/backup"
 ```
 
-- [ ] **Step 2: Handlers**
+- [x] **Step 2: Handlers**
 
 `ansible/roles/pelican_wings/handlers/main.yaml`:
 
@@ -486,7 +486,7 @@ pelican_backup_nfs_export: "/mnt/general/backup"
     state: restarted
 ```
 
-- [ ] **Step 3: Tasks**
+- [x] **Step 3: Tasks**
 
 `ansible/roles/pelican_wings/tasks/main.yaml`:
 
@@ -576,7 +576,7 @@ pelican_backup_nfs_export: "/mnt/general/backup"
       - "Then: ansible-playbook playbooks/caddy-gateway.yaml"
 ```
 
-- [ ] **Step 4: The systemd unit template**
+- [x] **Step 4: The systemd unit template**
 
 `ansible/roles/pelican_wings/templates/wings.service.j2` — from the Pelican docs:
 
@@ -603,7 +603,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 ```
 
-- [ ] **Step 5: The config template**
+- [x] **Step 5: The config template**
 
 `ansible/roles/pelican_wings/templates/config.yml.j2`. Keys verified against `config/config.go` in `pelican/wings`:
 
@@ -643,7 +643,7 @@ allowed_origins:
   - "{{ pelican_panel_url }}"
 ```
 
-- [ ] **Step 6: Verify the templates are valid Jinja and YAML**
+- [x] **Step 6: Verify the templates are valid Jinja and YAML**
 
 There is no host to run against yet, so render the config template standalone:
 
@@ -672,7 +672,7 @@ Expected: the rendered config prints with no traceback. A YAML error or an undef
 
 Note `ansible_managed | comment` renders a `#`-prefixed block, so the output stays valid YAML.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add ansible/roles/pelican_wings/
@@ -695,7 +695,7 @@ masquerades pod egress leaving the cluster."
 - Modify: `inventory/hosts.yaml`
 - Create: `inventory/group_vars/games.yaml`
 
-- [ ] **Step 1: Add the group**
+- [x] **Step 1: Add the group**
 
 Append to `inventory/hosts.yaml`, inside `all.children`:
 
@@ -711,7 +711,7 @@ Append to `inventory/hosts.yaml`, inside `all.children`:
           ansible_user: ubuntu
 ```
 
-- [ ] **Step 2: Add the group vars**
+- [x] **Step 2: Add the group vars**
 
 `inventory/group_vars/games.yaml`:
 
@@ -738,7 +738,7 @@ pelican_node_token: ""
 ansible_become: true
 ```
 
-- [ ] **Step 3: Verify the inventory parses and the group resolves**
+- [x] **Step 3: Verify the inventory parses and the group resolves**
 
 ```bash
 cd ansible && ansible-inventory --list --yaml | grep -A4 "games:"
@@ -746,7 +746,7 @@ cd ansible && ansible-inventory --list --yaml | grep -A4 "games:"
 
 Expected: the `games` group appears with `wings-1` and `ansible_host: 192.168.1.30`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add inventory/
@@ -762,7 +762,7 @@ git commit -m "Add the games inventory group with wings-1"
 - Create: `ansible/playbooks/pelican-wings.yaml`
 - Create: `ansible/playbooks/composite/wings.yaml`
 
-- [ ] **Step 1: Parameterise baseline's target**
+- [x] **Step 1: Parameterise baseline's target**
 
 `ansible/playbooks/baseline.yaml` hardcodes `hosts: edge`. Replace the file with:
 
@@ -780,7 +780,7 @@ git commit -m "Add the games inventory group with wings-1"
 
 `composite/edge.yaml` keeps working untouched because the default is `edge`.
 
-- [ ] **Step 2: The per-concern play**
+- [x] **Step 2: The per-concern play**
 
 `ansible/playbooks/pelican-wings.yaml`:
 
@@ -796,7 +796,7 @@ git commit -m "Add the games inventory group with wings-1"
     - pelican_wings
 ```
 
-- [ ] **Step 3: The composite play**
+- [x] **Step 3: The composite play**
 
 `ansible/playbooks/composite/wings.yaml`:
 
@@ -811,7 +811,7 @@ git commit -m "Add the games inventory group with wings-1"
 - import_playbook: ../pelican-wings.yaml
 ```
 
-- [ ] **Step 4: Syntax-check all three**
+- [x] **Step 4: Syntax-check all three**
 
 ```bash
 cd ansible && ansible-playbook --syntax-check \
@@ -823,7 +823,7 @@ cd ansible && ansible-playbook --syntax-check \
 
 Expected: exit 0, each playbook listed. This resolves roles and `import_playbook` paths, so a missing role or a bad relative path fails here.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ansible/playbooks/
@@ -846,7 +846,7 @@ The largest change to existing code. Stock apt Caddy cannot proxy raw TCP; Minec
 - Create: `ansible/roles/caddy_gateway/templates/systemd-override.conf.j2`
 - Modify: `inventory/group_vars/edge.yaml`
 
-- [ ] **Step 1: Add the new defaults**
+- [x] **Step 1: Add the new defaults**
 
 Append to `ansible/roles/caddy_gateway/defaults/main.yaml`:
 
@@ -874,7 +874,7 @@ caddy_build_goos: linux
 caddy_build_goarch: amd64
 ```
 
-- [ ] **Step 2: Relax the assert and pin the validator**
+- [x] **Step 2: Relax the assert and pin the validator**
 
 In `ansible/roles/caddy_gateway/tasks/main.yaml`, replace the first task:
 
@@ -904,7 +904,7 @@ with:
 
 A game-server forward is a legitimate reason to run this role with no HTTP sites at all.
 
-- [ ] **Step 3: Build the custom binary on the controller**
+- [x] **Step 3: Build the custom binary on the controller**
 
 In the same file, insert these tasks immediately after `- name: Install Caddy` (the apt task) and before `- name: Render the Caddyfile`:
 
@@ -974,7 +974,7 @@ In the same file, insert these tasks immediately after `- name: Install Caddy` (
     - Restart Caddy
 ```
 
-- [ ] **Step 4: Pin the Caddyfile validator to the custom binary**
+- [x] **Step 4: Pin the Caddyfile validator to the custom binary**
 
 Still in `tasks/main.yaml`, the render task currently validates with whatever `caddy` is on `PATH` — the apt build, which rejects `layer4`. Replace:
 
@@ -988,7 +988,7 @@ with:
     validate: "{{ caddy_custom_bin }} validate --adapter caddyfile --config %s"
 ```
 
-- [ ] **Step 5: Add the `Reload systemd` handler**
+- [x] **Step 5: Add the `Reload systemd` handler**
 
 `ansible/roles/caddy_gateway/handlers/main.yaml` has a `Reload Caddy`/`Restart Caddy` handler but no systemd reload. Append:
 
@@ -1001,7 +1001,7 @@ with:
 
 Read the existing handler file first and keep its contents; only append.
 
-- [ ] **Step 6: The systemd override template**
+- [x] **Step 6: The systemd override template**
 
 `ansible/roles/caddy_gateway/templates/systemd-override.conf.j2`:
 
@@ -1020,7 +1020,7 @@ ExecReload={{ caddy_custom_bin }} reload --config /etc/caddy/Caddyfile --force
 
 The empty assignments are required: systemd appends to `ExecStart` lists otherwise.
 
-- [ ] **Step 7: Add the layer4 block to the Caddyfile**
+- [x] **Step 7: Add the layer4 block to the Caddyfile**
 
 Replace `ansible/roles/caddy_gateway/templates/Caddyfile.j2` with:
 
@@ -1055,7 +1055,7 @@ Replace `ansible/roles/caddy_gateway/templates/Caddyfile.j2` with:
 {% endfor %}
 ```
 
-- [ ] **Step 8: Declare the route in the edge group vars**
+- [x] **Step 8: Declare the route in the edge group vars**
 
 In `inventory/group_vars/edge.yaml`, append:
 
@@ -1073,7 +1073,7 @@ caddy_l4_routes: [] # TODO: set upstream once wings-1 has joined the tailnet
 #     upstream: 100.x.y.z:25565
 ```
 
-- [ ] **Step 9: Verify the Caddyfile template renders valid syntax**
+- [x] **Step 9: Verify the Caddyfile template renders valid syntax**
 
 ```bash
 cd ansible && python3 -c "
@@ -1091,11 +1091,11 @@ print(jinja2.Template(src).render(
 
 Expected: a Caddyfile with a `layer4` block nested inside the global `{ }`, one `117.18.125.45:25565` listener, and the HTTP site below. Check by eye that the braces balance.
 
-- [ ] **Step 10: Verify the empty case still renders**
+- [x] **Step 10: Verify the empty case still renders**
 
 Re-run Step 9 with `caddy_l4_routes=[]`. Expected: output identical to the current Caddyfile — no `layer4` block at all. This is what guarantees the change is inert until a route is declared.
 
-- [ ] **Step 11: Syntax-check the playbook**
+- [x] **Step 11: Syntax-check the playbook**
 
 ```bash
 cd ansible && ansible-playbook --syntax-check playbooks/caddy-gateway.yaml
@@ -1103,7 +1103,7 @@ cd ansible && ansible-playbook --syntax-check playbooks/caddy-gateway.yaml
 
 Expected: exit 0.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add ansible/roles/caddy_gateway/ inventory/group_vars/edge.yaml
@@ -1132,7 +1132,7 @@ Red/green works literally here: list the resource in `kustomization.yaml` first,
 - Create: `kubernetes/apps/pelican/deployment.yaml`
 - Create: `kubernetes/apps/pelican/httproute.yaml`
 
-- [ ] **Step 1: Write the kustomization listing files that do not exist yet**
+- [x] **Step 1: Write the kustomization listing files that do not exist yet**
 
 `kubernetes/apps/pelican/kustomization.yaml`:
 
@@ -1148,12 +1148,12 @@ resources:
   - backup-cronjob.yaml
 ```
 
-- [ ] **Step 2: Run the build and watch it fail**
+- [x] **Step 2: Run the build and watch it fail**
 
 Run: `kustomize build kubernetes/apps/pelican/`
 Expected: FAIL — `accumulating resources: accumulation err=... namespace.yaml: no such file or directory`.
 
-- [ ] **Step 3: The namespace**
+- [x] **Step 3: The namespace**
 
 `kubernetes/apps/pelican/namespace.yaml`:
 
@@ -1166,7 +1166,7 @@ metadata:
     k8up-backup: enabled
 ```
 
-- [ ] **Step 4: The volume**
+- [x] **Step 4: The volume**
 
 SQLite over NFS is a known corruption path, so this is `local-path`, not `nfs-csi`. The cluster is single-node, so node affinity costs nothing.
 
@@ -1188,7 +1188,7 @@ spec:
       storage: 5Gi
 ```
 
-- [ ] **Step 5: The Deployment and Service**
+- [x] **Step 5: The Deployment and Service**
 
 `kubernetes/apps/pelican/deployment.yaml`:
 
@@ -1281,7 +1281,7 @@ spec:
       targetPort: http
 ```
 
-- [ ] **Step 6: The route**
+- [x] **Step 6: The route**
 
 `kubernetes/apps/pelican/httproute.yaml`:
 
@@ -1303,7 +1303,7 @@ spec:
           port: 80
 ```
 
-- [ ] **Step 7: Build and validate**
+- [x] **Step 7: Build and validate**
 
 The build still fails on `wings-1.yaml` and `backup-cronjob.yaml` (Tasks 9 and 10). Temporarily comment those two lines out of `kustomization.yaml`, then run:
 
@@ -1318,7 +1318,7 @@ Expected: `Summary: 5 resources found ... 0 errors, 0 skipped` (or skipped for t
 
 Uncomment both lines again before committing — they are restored in Tasks 9 and 10.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add kubernetes/apps/pelican/
@@ -1338,7 +1338,7 @@ local-path rather than nfs-csi because SQLite locking over NFS corrupts."
 **Files:**
 - Create: `kubernetes/apps/pelican/wings-1.yaml`
 
-- [ ] **Step 1: Write it**
+- [x] **Step 1: Write it**
 
 Lifted from `kubernetes/apps/external/proxmox.yaml`, which already solves "route to a non-cluster IP, with a console websocket that must not time out".
 
@@ -1406,13 +1406,13 @@ spec:
       requestTimeout: "0s"
 ```
 
-- [ ] **Step 2: Build and validate**
+- [x] **Step 2: Build and validate**
 
 Restore the `wings-1.yaml` line in `kustomization.yaml` if it is still commented, then run the Step 7 command from Task 8 (with `backup-cronjob.yaml` still commented out).
 
 Expected: `9 resources found`, 0 errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add kubernetes/apps/pelican/
@@ -1432,7 +1432,7 @@ restic snapshots a live SQLite file, which can tear if a write lands mid-copy. A
 **Files:**
 - Create: `kubernetes/apps/pelican/backup-cronjob.yaml`
 
-- [ ] **Step 1: Write it**
+- [x] **Step 1: Write it**
 
 Runs at 02:55, twenty minutes before the k8up schedule in Task 12. Mounts the same RWO PVC as the Panel — fine, both land on the single node.
 
@@ -1510,7 +1510,7 @@ spec:
                 claimName: pelican-data-pvc
 ```
 
-- [ ] **Step 2: Build and validate the whole app**
+- [x] **Step 2: Build and validate the whole app**
 
 All files now exist. Restore both commented lines in `kustomization.yaml` and run:
 
@@ -1523,7 +1523,7 @@ kustomize build kubernetes/apps/pelican/ | kubeconform \
 
 Expected: `10 resources found`, 0 errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add kubernetes/apps/pelican/
@@ -1545,7 +1545,7 @@ The path is confirmed, not assumed: in the image,
 - Create: `kubernetes/flux/pelican.yaml`
 - Modify: `kubernetes/flux/kustomization.yaml`
 
-- [ ] **Step 1: Write the Kustomization**
+- [x] **Step 1: Write the Kustomization**
 
 No Postgres dependency — this app uses SQLite.
 
@@ -1567,11 +1567,11 @@ spec:
     - name: systems
 ```
 
-- [ ] **Step 2: Register it**
+- [x] **Step 2: Register it**
 
 Add `- pelican.yaml` to the `resources` list in `kubernetes/flux/kustomization.yaml`, keeping the existing ordering convention of that file.
 
-- [ ] **Step 3: Validate**
+- [x] **Step 3: Validate**
 
 ```bash
 kustomize build kubernetes/flux/ | kubeconform \
@@ -1582,7 +1582,7 @@ kustomize build kubernetes/flux/ | kubeconform \
 
 Expected: 0 errors, and the resource count is one higher than before.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add kubernetes/flux/
@@ -1597,7 +1597,7 @@ git commit -m "Wire the pelican app into Flux"
 - Create: `kubernetes/apps/k8up-schedules/pelican.yaml`
 - Modify: `kubernetes/apps/k8up-schedules/kustomization.yaml`
 
-- [ ] **Step 1: Write the schedule**
+- [x] **Step 1: Write the schedule**
 
 A copy of `pocket-id.yaml` with the bucket and times changed. Every existing schedule time is listed by `grep -n 'schedule:' kubernetes/apps/k8up-schedules/*.yaml`; these three slots are the free ones nearest the CronJob in Task 10. Note the check is **not** `15 5 * * 0` — `metrics-exporter` already holds it.
 
@@ -1636,11 +1636,11 @@ spec:
       keepMonthly: 6
 ```
 
-- [ ] **Step 2: Register it**
+- [x] **Step 2: Register it**
 
 Add `- pelican.yaml` to the `resources` list in `kubernetes/apps/k8up-schedules/kustomization.yaml`.
 
-- [ ] **Step 3: Validate**
+- [x] **Step 3: Validate**
 
 ```bash
 kustomize build kubernetes/apps/k8up-schedules/ | kubeconform \
@@ -1651,7 +1651,7 @@ kustomize build kubernetes/apps/k8up-schedules/ | kubeconform \
 
 Expected: 0 errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add kubernetes/apps/k8up-schedules/
@@ -1667,7 +1667,7 @@ Three new pins live in Ansible files, which no built-in manager reads. Pelican i
 **Files:**
 - Modify: `renovate.json`
 
-- [ ] **Step 1: Add the custom managers**
+- [x] **Step 1: Add the custom managers**
 
 Append these three objects to the `customManagers` array, after the existing derper entry:
 
@@ -1713,7 +1713,7 @@ Append these three objects to the `customManagers` array, after the existing der
     }
 ```
 
-- [ ] **Step 2: Add the package rule**
+- [x] **Step 2: Add the package rule**
 
 Append to the `packageRules` array:
 
@@ -1729,7 +1729,7 @@ Append to the `packageRules` array:
     }
 ```
 
-- [ ] **Step 3: Validate the JSON**
+- [x] **Step 3: Validate the JSON**
 
 ```bash
 python3 -c "import json; json.load(open('renovate.json')); print('valid')"
@@ -1737,7 +1737,7 @@ python3 -c "import json; json.load(open('renovate.json')); print('valid')"
 
 Expected: `valid`.
 
-- [ ] **Step 4: Check the regexes match the real files**
+- [x] **Step 4: Check the regexes match the real files**
 
 ```bash
 grep -nE 'pelican_wings_version:|caddy_version:|caddy_l4_version:' \
@@ -1747,7 +1747,7 @@ grep -nE 'pelican_wings_version:|caddy_version:|caddy_l4_version:' \
 
 Expected: three lines, each with a `v`-prefixed quoted version. If a pin is unquoted or lacks the `v`, the manager will not match it.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add renovate.json
@@ -1766,7 +1766,7 @@ a bump on a prerelease tag. Never automerged."
 - Modify: `ansible/README.md`
 - Create: `docs/runbooks/pelican.md`
 
-- [ ] **Step 1: Update the IP plan**
+- [x] **Step 1: Update the IP plan**
 
 In `docs/ip-plan.md`, replace:
 
@@ -1786,7 +1786,7 @@ with:
 > and was decommissioned when wings-1 took the address.
 ```
 
-- [ ] **Step 2: Document the new roles**
+- [x] **Step 2: Document the new roles**
 
 Append two sections to `ansible/README.md`, matching the existing style (what it does, why, how to run it, what to do afterwards, and a Scope note).
 
@@ -1821,7 +1821,7 @@ create the Node in the Panel or open any firewall.
 Also update the **tailscale-derp** section to note that the tailscaled install
 now comes from the `tailscale_node` role.
 
-- [ ] **Step 3: Write the runbook**
+- [x] **Step 3: Write the runbook**
 
 `docs/runbooks/pelican.md` covers the steps that have no API. Write it to
 contain, in order:
@@ -1856,7 +1856,7 @@ contain, in order:
 Include this warning: all players will share one source IP, because Fabric and
 Forge cannot read PROXY protocol. Ban by UUID, not IP.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/ ansible/README.md
