@@ -27,14 +27,55 @@
   failed_when: false
 
 - name: Join the tailnet
-  ansible.builtin.command:
-    cmd: "tailscale up --authkey={{ tailscale_authkey }} {{ tailscale_up_args }}"
   when: >-
     tailscale_status.rc != 0
     or (tailscale_status.stdout | from_json).BackendState | default('') != 'Running'
-  no_log: true
-  register: tailscale_up
-  changed_when: tailscale_up.rc == 0
+  block:
+    # Passing the key by file rather than argv keeps it out of `ps`, and means
+    # this block needs no blanket no_log -- so a failed join reports its reason.
+    - name: Stage the auth key on tmpfs
+      ansible.builtin.copy:
+        content: "{{ tailscale_authkey }}"
+        dest: "{{ tailscale_authkey_path }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Bring the node up
+      ansible.builtin.command:
+        cmd: >-
+          tailscale up
+          --auth-key=file:{{ tailscale_authkey_path }}
+          --timeout={{ tailscale_up_timeout }}
+          {{ tailscale_up_args }}
+      register: tailscale_up
+      changed_when: tailscale_up.rc == 0
+
+  rescue:
+    - name: Read the backend state behind the failure
+      ansible.builtin.command:
+        cmd: tailscale status --json
+      register: tailscale_failed_status
+      changed_when: false
+      failed_when: false
+
+    - name: Explain why the join did not complete
+      ansible.builtin.fail:
+        msg: >-
+          tailscale up did not reach Running within {{ tailscale_up_timeout }}.
+          Backend state:
+          {{ (tailscale_failed_status.stdout | from_json).BackendState
+             if tailscale_failed_status.stdout | length > 0 else 'unavailable' }}.
+          NeedsMachineAuth means this tailnet requires device approval -- approve
+          the node at https://login.tailscale.com/admin/machines and re-run, or
+          tick "Pre-approved" when creating the auth key to avoid the stall.
+          NeedsLogin means the key was rejected: check it has not expired and that
+          its tags match tailscale_tags ({{ tailscale_tags | default('none') }}).
+
+  always:
+    - name: Remove the staged auth key
+      ansible.builtin.file:
+        path: "{{ tailscale_authkey_path }}"
+        state: absent
 
 # `tailscale up` only runs on first join, so reconcile the mutable prefs on
 # every run via `tailscale set` -- this is how a later accept-routes flip
