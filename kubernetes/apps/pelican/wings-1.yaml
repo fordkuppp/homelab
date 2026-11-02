@@ -1,0 +1,61 @@
+# The browser talks to Wings directly for the console websocket and the file
+# manager, so Wings needs a trusted cert. Rather than running certbot on every
+# Wings VM, terminate at the gateway: the wildcard certificate already covers
+# wings-N.local.fordkuppp.me, so adding a node is this file again with a new
+# address. Wings itself speaks plain HTTP (api.ssl.enabled: false).
+apiVersion: v1
+kind: Service
+metadata:
+  name: wings-1
+  namespace: pelican
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: wings-1
+  namespace: pelican
+  labels:
+    kubernetes.io/service-name: wings-1
+addressType: IPv4
+ports:
+  - name: http
+    port: 8080
+endpoints:
+  - addresses:
+      - "192.168.1.30"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wings-1
+  namespace: pelican
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "wings-1.local.fordkuppp.me"
+  rules:
+    - backendRefs:
+        - name: wings-1
+          port: 8080
+---
+# The server console is a long-lived websocket, same as the PVE console.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: wings-1
+  namespace: pelican
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: wings-1
+  timeout:
+    http:
+      requestTimeout: "0s"

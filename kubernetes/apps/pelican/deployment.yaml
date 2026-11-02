@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pelican
+  namespace: pelican
+  labels:
+    app.kubernetes.io/name: pelican
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pelican
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pelican
+    spec:
+      enableServiceLinks: false
+      securityContext:
+        # The image runs as www-data (82:82) and the panel writes its .env,
+        # SQLite database and storage into the volume on first boot.
+        fsGroup: 82
+      containers:
+        - name: pelican
+          image: ghcr.io/pelican/panel:v1.0.0-rc.2
+          env:
+            - name: APP_URL
+              value: https://panel.local.fordkuppp.me
+            # Required, not cosmetic: with an https APP_URL the entrypoint
+            # exits 1 unless this is set or an LE_EMAIL is given. It also
+            # switches the in-container Caddy to plain :80 with auto_https off,
+            # which is what the gateway in front of it expects.
+            - name: BEHIND_PROXY
+              value: "true"
+            # Envoy runs inside the cluster, so the panel is reached from a POD
+            # address. (Wings, outside the cluster, sees the node address
+            # instead -- flannel masquerades pod egress on the way out.)
+            - name: TRUSTED_PROXIES
+              value: 10.42.0.0/16
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: TZ
+              value: Asia/Bangkok
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          # Until the install wizard runs, / is a 302 to /installer. Kubernetes
+          # treats 200-399 as success, so this probe is right in both states.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /pelican-data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pelican-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pelican
+  namespace: pelican
+spec:
+  selector:
+    app.kubernetes.io/name: pelican
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

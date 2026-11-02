@@ -1427,7 +1427,7 @@ websocket needs."
 
 ### Task 10: Consistent SQLite snapshots before the backup window
 
-restic snapshots a live SQLite file, which can tear if a write lands mid-copy. A nightly `.backup` gives a guaranteed-consistent copy for k8up to pick up.
+restic snapshots a live SQLite file, which can tear if a write lands mid-copy. A nightly consistent copy gives k8up something guaranteed-restorable to pick up.
 
 **Files:**
 - Create: `kubernetes/apps/pelican/backup-cronjob.yaml`
@@ -1436,10 +1436,21 @@ restic snapshots a live SQLite file, which can tear if a write lands mid-copy. A
 
 Runs at 02:55, twenty minutes before the k8up schedule in Task 12. Mounts the same RWO PVC as the Panel — fine, both land on the single node.
 
+Two choices worth knowing before you read the YAML:
+
+- **It runs the Panel's own image, not `alpine` + `apk add sqlite`.** The Panel image ships no `sqlite3` CLI, but its PHP has the `sqlite3` extension (verified: SQLite 3.53.4). Reusing the image means one fewer tag to track, no network fetch inside the job, and a uid that already matches the writer. `VACUUM INTO` is the same mechanism behind the `.backup` dot-command.
+- **`enableExceptions(true)` is load-bearing.** `SQLite3::exec()` defaults to emitting a warning and returning `false`, so without it a failed backup exits 0 and the CronJob reports success over a stale snapshot. Verified both ways.
+
 ```yaml
-# restic (via k8up) snapshots the SQLite file in place, which can tear if a
-# write lands mid-copy. sqlite3 .backup takes a proper consistent copy; k8up
-# then picks up both the live DB and this known-good one.
+# k8up/restic copies the SQLite file byte-for-byte, which tears if a write
+# lands mid-copy. VACUUM INTO takes a consistent copy twenty minutes ahead of
+# the k8up schedule, so the restic snapshot always contains one database that
+# is known to be restorable.
+#
+# Running the panel's own image avoids a second image to track and guarantees
+# the uid and the SQLite build match the writer. It ships no sqlite3 CLI, but
+# its PHP has the sqlite3 extension, and VACUUM INTO is the same mechanism the
+# `.backup` dot-command uses.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1457,18 +1468,39 @@ spec:
         spec:
           restartPolicy: OnFailure
           enableServiceLinks: false
+          securityContext:
+            runAsUser: 82
+            runAsGroup: 82
+            fsGroup: 82
           containers:
             - name: snapshot
-              image: alpine:3.22
+              image: ghcr.io/pelican/panel:v1.0.0-rc.2
               command:
-                - /bin/sh
-                - -c
+                - php
+                - -r
                 - |
-                  set -eu
-                  apk add --no-cache sqlite
-                  mkdir -p /pelican-data/snapshots
-                  sqlite3 /pelican-data/database/database.sqlite \
-                    ".backup /pelican-data/snapshots/panel.sqlite"
+                  $src = '/pelican-data/database/database.sqlite';
+                  $dst = '/pelican-data/snapshots/panel.sqlite';
+                  if (!is_file($src)) {
+                      fwrite(STDERR, "no database at {$src} yet -- the panel installer has not run\n");
+                      exit(0);
+                  }
+                  if (!is_dir(dirname($dst)) && !mkdir(dirname($dst), 0750, true)) {
+                      fwrite(STDERR, "cannot create " . dirname($dst) . "\n");
+                      exit(1);
+                  }
+                  $tmp = $dst . '.tmp';
+                  @unlink($tmp);
+                  $db = new SQLite3($src, SQLITE3_OPEN_READONLY);
+                  // Without this, a failed VACUUM is a warning and the job still exits 0.
+                  $db->enableExceptions(true);
+                  $db->exec("VACUUM INTO '{$tmp}'");
+                  $db->close();
+                  if (!rename($tmp, $dst)) {
+                      fwrite(STDERR, "cannot move {$tmp} into place\n");
+                      exit(1);
+                  }
+                  fwrite(STDERR, "snapshot written to {$dst}\n");
               volumeMounts:
                 - name: data
                   mountPath: /pelican-data
@@ -1497,13 +1529,13 @@ Expected: `10 resources found`, 0 errors.
 git add kubernetes/apps/pelican/
 git commit -m "Snapshot the panel SQLite before the backup window
 
-restic copying a live SQLite file can tear. sqlite3 .backup makes a
+restic copying a live SQLite file can tear. VACUUM INTO makes a
 consistent copy twenty minutes ahead of the k8up schedule."
 ```
 
-Note: the exact SQLite path (`/pelican-data/database/database.sqlite`) must be
-confirmed against a running Panel — see Task 15, step 7. If it differs, fix it
-there.
+The path is confirmed, not assumed: in the image,
+`/var/www/html/database/database.sqlite` is a symlink to
+`/pelican-data/database/database.sqlite`.
 
 ---
 
@@ -1804,10 +1836,10 @@ contain, in order:
    `wings-1.local.fordkuppp.me`, port `8080`, **SSL on** (the gateway presents
    it), daemon SFTP port `2022`. Copy the generated `uuid`, `token_id` and
    `token` into Bitwarden.
-7. **Confirm the SQLite path** —
-   `kubectl -n pelican exec deploy/pelican -- find /pelican-data -name '*.sqlite'`.
-   If it is not `/pelican-data/database/database.sqlite`, fix
-   `backup-cronjob.yaml`.
+7. **Prove the snapshot job** — now that a database exists, don't wait for
+   02:55: `kubectl -n pelican create job --from=cronjob/pelican-sqlite-snapshot
+   snapshot-test`, then check `kubectl -n pelican logs job/snapshot-test` says
+   `snapshot written`. Delete the job afterwards.
 8. **Run the composite play** (command as in `ansible/README.md`).
 9. **Verify the node** — it should show green in the Panel.
 10. **Create the Minecraft server** — pick a Fabric or Forge egg, allocate
