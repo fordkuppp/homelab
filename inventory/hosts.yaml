@@ -10,3 +10,13 @@ all:
         derp-bkk-01:
           ansible_host: 117.18.125.45 # ReadyIDC VPS, SSH/management over the 2nd IP
           ansible_user: root
+
+    # Pelican Wings host. Runs the game containers; the Panel lives in k3s.
+    # On the LAN, plus a tailnet node of its own so the Bangkok edge VPS can
+    # forward Minecraft traffic to it without routing every player packet
+    # through the cluster's subnet router.
+    games:
+      hosts:
+        wings-1:
+          ansible_host: 192.168.1.30
+          ansible_user: ubuntu
