@@ -44,15 +44,19 @@ packages:
   - docker-ce
   - docker-ce-cli
   - containerd.io
+%{ if var.user_data != "" ~}
 write_files:
   - path: /usr/local/bin/user-data.sh
     permissions: '0755'
     content: |
       ${indent(6, var.user_data)}
+%{ endif ~}
 runcmd:
   - [systemctl, enable, qemu-guest-agent]
   - [systemctl, start, qemu-guest-agent]
+%{ if var.user_data != "" ~}
   - [ sh, "/usr/local/bin/user-data.sh" ]
+%{ endif ~}
 EOF
   }
 }

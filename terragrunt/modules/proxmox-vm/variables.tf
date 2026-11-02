@@ -68,8 +68,9 @@ variable "bridge" {
 }
 
 variable "user_data" {
-  type = string
-  description = "Script to run when VM init"
+  type        = string
+  description = "Script to run on first boot. Empty for VMs configured entirely by Ansible."
+  default     = ""
 }
 
 variable "on_boot" {
