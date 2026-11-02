@@ -45,9 +45,9 @@ caddy_sites: [] # TODO
 # out of the player data path. The pelican_wings role prints the value to use.
 # Also needs an A record mc.fordkuppp.me -> caddy_bind_ip with the Cloudflare
 # proxy OFF (it does not carry raw TCP), and 25565/tcp open in the provider SG.
-caddy_l4_routes: [] # set the upstream once wings-1 has joined the tailnet
-#   - listen_port: 25565
-#     upstream: 100.x.y.z:25565
+caddy_l4_routes:
+  - listen_port: 25565
+    upstream: "100.68.244.45:25565" # wings-1's tailnet address
 
 # --- Custom Caddy build (needs Go on the Ansible controller) ---
 # Renovate tracks both.
