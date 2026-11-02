@@ -50,6 +50,45 @@
       ],
       "depNameTemplate": "tailscale/tailscale",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Pelican Wings: the daemon binary installed on the games group",
+      "managerFilePatterns": [
+        "/^ansible/roles/pelican_wings/defaults/main\\.yaml$/",
+        "/^inventory/group_vars/games\\.yaml$/"
+      ],
+      "matchStrings": [
+        "pelican_wings_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "pelican/wings",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Caddy: rebuilt from source with caddy-l4, so the version is pinned here rather than apt",
+      "managerFilePatterns": [
+        "/^ansible/roles/caddy_gateway/defaults/main\\.yaml$/",
+        "/^inventory/group_vars/edge\\.yaml$/"
+      ],
+      "matchStrings": [
+        "caddy_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "caddyserver/caddy",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "caddy-l4: the layer4 module compiled into the custom Caddy build",
+      "managerFilePatterns": [
+        "/^ansible/roles/caddy_gateway/defaults/main\\.yaml$/",
+        "/^inventory/group_vars/edge\\.yaml$/"
+      ],
+      "matchStrings": [
+        "caddy_l4_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "mholt/caddy-l4",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
@@ -132,6 +171,15 @@
         "intel-device-plugins-gpu"
       ],
       "groupName": "intel device plugins",
+      "automerge": false
+    },
+    {
+      "description": "Pelican is pre-1.0 and ships release candidates. Renovate skips prereleases by default, so without ignoreUnstable it would never propose a bump at all. Breaking changes between RCs are realistic -- always a human and a changelog read.",
+      "matchPackageNames": [
+        "pelican/**",
+        "ghcr.io/pelican/**"
+      ],
+      "ignoreUnstable": false,
       "automerge": false
     }
   ],
