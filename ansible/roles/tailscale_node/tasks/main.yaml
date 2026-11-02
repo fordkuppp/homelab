@@ -1,0 +1,61 @@
+---
+- name: Fail fast when the Tailscale auth key is missing
+  ansible.builtin.assert:
+    that:
+      - tailscale_authkey | length > 0
+    fail_msg: >-
+      tailscale_authkey is unset. Create a TAGGED pre-auth key in the Tailscale
+      admin console, store it in Bitwarden Secrets Manager, and pass it at run
+      time: -e "tailscale_authkey=$(bws secret get $BWS_TS_AUTHKEY_ID | jq -r .value)".
+
+- name: Install Tailscale via the official script
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://tailscale.com/install.sh | sh
+    creates: /usr/bin/tailscale
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Check tailnet connection state
+  ansible.builtin.command:
+    cmd: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Join the tailnet
+  ansible.builtin.command:
+    cmd: "tailscale up --authkey={{ tailscale_authkey }} {{ tailscale_up_args }}"
+  when: >-
+    tailscale_status.rc != 0
+    or (tailscale_status.stdout | from_json).BackendState | default('') != 'Running'
+  no_log: true
+  register: tailscale_up
+  changed_when: tailscale_up.rc == 0
+
+# `tailscale up` only runs on first join, so reconcile the mutable prefs on
+# every run via `tailscale set` -- this is how a later accept-routes flip
+# actually takes effect without re-authing.
+- name: Reconcile tailnet preferences
+  ansible.builtin.command:
+    cmd: >-
+      tailscale set
+      --accept-dns=false
+      --accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}
+      --ssh=false
+  changed_when: false
+
+- name: Read this node's tailnet IPv4
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip
+  changed_when: false
+
+# Consumers (e.g. the Caddy L4 upstream for a game server) need this address,
+# and looking it up by hand in the admin console is a step worth removing.
+- name: Expose the tailnet IPv4 as a fact
+  ansible.builtin.set_fact:
+    tailscale_ipv4: "{{ tailscale_ip.stdout_lines[0] }}"

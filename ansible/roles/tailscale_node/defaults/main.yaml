@@ -1,0 +1,17 @@
+---
+# Required. A tagged pre-auth key OR an OAuth client secret (tskey-client-...,
+# non-expiring), passed at run time (see inventory/group_vars/).
+tailscale_authkey: ""
+tailscale_hostname: "{{ inventory_hostname }}"
+# Tags advertised on join. REQUIRED when authing with an OAuth client secret
+# (must be a subset of the client's tags); harmless with a tagged pre-auth key.
+tailscale_tags: ""
+# Off by default. The edge node flips it on so the co-located Caddy gateway can
+# reach the homelab; a node already ON the LAN must leave it off, or it learns
+# routes to the network it is already sitting in.
+tailscale_accept_routes: false
+tailscale_up_args: >-
+  --accept-dns=false
+  --accept-routes={{ 'true' if tailscale_accept_routes else 'false' }}
+  --ssh=false --hostname={{ tailscale_hostname }}
+  {{ ('--advertise-tags=' ~ tailscale_tags) if tailscale_tags else '' }}
