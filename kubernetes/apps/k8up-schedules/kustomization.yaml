@@ -10,3 +10,4 @@ resources:
   - gotify.yaml
   - syncthing.yaml
   - uptime-kuma.yaml
+  - pelican.yaml

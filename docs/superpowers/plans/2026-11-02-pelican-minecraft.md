@@ -1599,7 +1599,7 @@ git commit -m "Wire the pelican app into Flux"
 
 - [ ] **Step 1: Write the schedule**
 
-A copy of `pocket-id.yaml` with the bucket and times changed. 03:15 clears the existing 02:15 and 03:45 slots and follows the CronJob in Task 10.
+A copy of `pocket-id.yaml` with the bucket and times changed. Every existing schedule time is listed by `grep -n 'schedule:' kubernetes/apps/k8up-schedules/*.yaml`; these three slots are the free ones nearest the CronJob in Task 10. Note the check is **not** `15 5 * * 0` — `metrics-exporter` already holds it.
 
 ```yaml
 apiVersion: k8up.io/v1
@@ -1621,13 +1621,15 @@ spec:
         name: k8up-repo
         key: secret_key
   backup:
+    # Twenty minutes after the pelican-sqlite-snapshot CronJob, so every
+    # restic snapshot contains a consistent copy of the database.
     schedule: "15 3 * * *"
     failedJobsHistoryLimit: 3
     successfulJobsHistoryLimit: 1
   check:
-    schedule: "15 5 * * 0"
+    schedule: "30 6 * * 0"
   prune:
-    schedule: "45 3 * * *"
+    schedule: "55 3 * * *"
     retention:
       keepDaily: 14
       keepWeekly: 8

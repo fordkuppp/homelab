@@ -17,6 +17,7 @@ resources:
   - media.yaml
   - metrics-exporter.yaml
   - observability.yaml
+  - pelican.yaml
   - pocket-id.yaml
   - postgres.yaml
   - sops.yaml
