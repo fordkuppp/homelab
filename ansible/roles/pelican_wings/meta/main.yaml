@@ -1,0 +1,5 @@
+---
+# Wings runs every game server as a Docker container and calls ConfigureDocker()
+# during boot -- a missing daemon is log.Fatal, not a degraded mode.
+dependencies:
+  - role: docker

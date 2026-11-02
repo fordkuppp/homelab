@@ -195,6 +195,16 @@ the systemd drop-in restarts it instead.
 Reverse-proxy only. No host hardening, no auth/WAF in front of the proxied
 services -- add those per service as needed.
 
+## docker
+
+Docker Engine from Docker's own apt repo, not Ubuntu's `docker.io` -- the distro
+package lags by releases and Wings talks to the Engine API directly. Container
+logs are capped (`10m` x 3) in `/etc/docker/daemon.json`, because game servers
+are chatty and long-lived and the first symptom of the default unbounded
+`json-file` driver is a full disk.
+
+Not run on its own; `pelican_wings` pulls it in as a meta dependency.
+
 ## pelican-wings
 
 Installs [Pelican](https://pelican.dev) **Wings**, the daemon that owns the game
@@ -202,6 +212,12 @@ containers, on the `games` group. The Panel half is a Flux app
 (`kubernetes/apps/pelican`); Wings is deliberately not in the cluster, because
 game servers want a whole machine's CPU and disk rather than a scheduler's share
 of one.
+
+The Minecraft server itself runs **here**, as a Docker container Wings creates
+and supervises — the Panel only drives it. World data lives in
+`/var/lib/pelican/volumes/<server-uuid>`. The role pulls in `docker` as a meta
+dependency; Wings calls `ConfigureDocker()` during boot and a missing daemon is
+a fatal exit, not a degraded mode.
 
 ### 1. Bring the Panel up and register the Node
 
