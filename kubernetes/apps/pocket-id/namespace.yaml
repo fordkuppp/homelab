@@ -3,4 +3,5 @@ kind: Namespace
 metadata:
   name: pocket-id
   labels:
+    istio.io/dataplane-mode: ambient
     k8up-backup: enabled

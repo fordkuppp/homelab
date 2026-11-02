@@ -29,7 +29,7 @@ spec:
             - name: TZ
               value: Asia/Bangkok
             - name: PROWLARR__POSTGRES__HOST
-              value: postgres-rw.postgres.svc.cluster.local
+              value: postgres18-rw.postgres.svc.cluster.local
             - name: PROWLARR__POSTGRES__PORT
               value: "5432"
             - name: PROWLARR__POSTGRES__MAINDB

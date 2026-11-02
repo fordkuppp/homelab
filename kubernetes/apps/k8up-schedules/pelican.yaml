@@ -25,7 +25,7 @@ spec:
   check:
     schedule: "30 6 * * 0"
   prune:
-    schedule: "55 3 * * *"
+    schedule: "55 4 * * *"
     retention:
       keepDaily: 14
       keepWeekly: 8

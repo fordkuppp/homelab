@@ -41,7 +41,7 @@ spec:
         enabled: true
         additionalLabels:
           release: kube-prometheus-stack
+      # The K8up alerts were imported into Grafana as Grafana-managed rules;
+      # leaving them here too would mean two copies of each.
       prometheusRule:
-        enabled: true
-        additionalLabels:
-          release: kube-prometheus-stack
+        enabled: false

@@ -8,10 +8,13 @@ resources:
   - external.yaml
   - external-secrets.yaml
   - flux-noti.yaml
+  - freshrss.yaml
   - gateway.yaml
   - gotify.yaml
   - homepage.yaml
   - immich.yaml
+  - istio.yaml
+  - kiali.yaml
   - k8up.yaml
   - k8up-schedules.yaml
   - media.yaml

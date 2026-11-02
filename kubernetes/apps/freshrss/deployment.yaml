@@ -1,0 +1,143 @@
+# The Debian image, not -alpine: mod_auth_openidc ships only in the Debian
+# variant, so the Alpine tag cannot do OIDC at all.
+#
+# Login goes through Pocket ID. Apache authenticates the request and hands
+# FreshRSS a REMOTE_USER, which is why auth-type is http_auth rather than form.
+# That name has to match the Pocket ID username *exactly*, case included --
+# a mismatch is a 403 with no way in, so --default-user and --user below are
+# both pinned to the account that exists in Pocket ID today.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freshrss
+  namespace: freshrss
+  labels:
+    app.kubernetes.io/name: freshrss
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: freshrss
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: freshrss
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: freshrss
+          image: freshrss/freshrss:1.30.4
+          env:
+            - name: TZ
+              value: Asia/Bangkok
+            # Built-in cron refreshes the feeds; without this nothing updates
+            # until someone opens the web interface.
+            - name: CRON_MIN
+              value: "13,43"
+            # Envoy is the only thing in front of FreshRSS. Trusting the pod
+            # CIDR makes Apache honour X-Forwarded-For, so logs and the OIDC
+            # return URL see the real client rather than the proxy.
+            - name: TRUSTED_PROXY
+              value: 10.42.0.0/16
+            - name: OIDC_ENABLED
+              value: "1"
+            - name: OIDC_PROVIDER_METADATA_URL
+              value: https://id.local.fordkuppp.me/.well-known/openid-configuration
+            # profile carries preferred_username, which is what becomes the
+            # FreshRSS user name; openid alone would not expose it.
+            - name: OIDC_SCOPES
+              value: openid email profile
+            - name: OIDC_REMOTE_USER_CLAIM
+              value: preferred_username
+            # Required behind a proxy: without it mod_auth_openidc builds the
+            # callback from the pod's own address and the redirect fails.
+            - name: OIDC_X_FORWARDED_HEADERS
+              value: X-Forwarded-Proto X-Forwarded-Host
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: freshrss
+                  key: oidc_client_id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: freshrss
+                  key: oidc_client_secret
+            - name: OIDC_CLIENT_CRYPTO_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: freshrss
+                  key: oidc_crypto_key
+            - name: FRESHRSS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: freshrss
+                  key: db_password
+            # Runs once, on the first start against an empty data volume; every
+            # later start exits 3 (already installed) and changes nothing. The
+            # entrypoint expands $FRESHRSS_DB_PASSWORD from the env above, so
+            # the password never appears in this manifest.
+            - name: FRESHRSS_INSTALL
+              value: >-
+                --api-enabled
+                --auth-type http_auth
+                --base-url https://rss.local.fordkuppp.me
+                --db-base freshrss
+                --db-host postgres18-rw.postgres.svc.cluster.local
+                --db-password $FRESHRSS_DB_PASSWORD
+                --db-type pgsql
+                --db-user freshrss
+                --default-user fordkuppp
+                --language en
+            # No --password: with http_auth FreshRSS never checks one. The API
+            # password for mobile readers is set later under Profile -> API.
+            - name: FRESHRSS_USER
+              value: >-
+                --user fordkuppp
+                --language en
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          # An HTTP probe would be answered by the OIDC redirect rather than by
+          # FreshRSS, so it would stay green with a broken database. health.php
+          # checks the application and its database connection.
+          startupProbe:
+            exec:
+              command: ["php", "-f", "/var/www/FreshRSS/cli/health.php"]
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command: ["php", "-f", "/var/www/FreshRSS/cli/health.php"]
+            periodSeconds: 60
+            timeoutSeconds: 15
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /var/www/FreshRSS/data
+            - name: extensions
+              mountPath: /var/www/FreshRSS/extensions
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: freshrss-data-pvc
+        - name: extensions
+          persistentVolumeClaim:
+            claimName: freshrss-extensions-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: freshrss
+  namespace: freshrss
+spec:
+  selector:
+    app.kubernetes.io/name: freshrss
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

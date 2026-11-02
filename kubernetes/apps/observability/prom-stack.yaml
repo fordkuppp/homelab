@@ -26,19 +26,60 @@ spec:
         kind: HelmRepository
         name: prometheus-community
   values:
+    # Alert rules live in Grafana as Grafana-managed rules, imported through
+    # /api/convert/prometheus and editable in the UI -- they are deliberately
+    # not defined in files here. Only the *alerting* groups are switched off
+    # below; every recording group stays on, because dashboards and other
+    # rules depend on the series they produce.
+    defaultRules:
+      rules:
+        alertmanager: false
+        configReloaders: false
+        general: false
+        kubeApiserverSlos: false
+        kubeStateMetrics: false
+        kubernetesApps: false
+        kubernetesResources: false
+        kubernetesStorage: false
+        kubernetesSystem: false
+        network: false
+        nodeExporterAlerting: false
+        prometheus: false
+        prometheusOperator: false
     grafana:
       grafana.ini:
         server:
-          domain: "grafana.local.fordkuppp.me"
+          domain: grafana.local.fordkuppp.me
+        unified_alerting:
+          enabled: true
+        database:
+          type: postgres
+          host: postgres18-rw.postgres.svc.cluster.local:5432
+          name: grafana
+          user: grafana
+          ssl_mode: disable
       sidecar:
         dashboards:
           provider:
-            folder: "Built in"
+            folder: Built in
       defaultDashboardsTimezone: Asia/Bangkok
       additionalDataSources:
-        - name: Loki
-          type: loki
-          url: http://loki.observability.svc:3100
+      - name: Loki
+        type: loki
+        url: http://loki.observability.svc:3100
+      # uid is pinned: the hand-made Steam metrics dashboard refers to it by
+      # this exact value, so a regenerated one would leave it querying nothing.
+      - name: TimescaleDB
+        uid: cfk814jeejgg0f
+        type: grafana-postgresql-datasource
+        url: postgres18-rw.postgres.svc.cluster.local:5432
+        user: admin
+        jsonData:
+          database: metrics_exporter
+          sslmode: disable
+          timescaledb: true
+        secureJsonData:
+          password: ${TIMESCALEDB_PASSWORD}
       persistence:
         enabled: true
         storageClassName: nfs-csi
@@ -47,6 +88,41 @@ spec:
           app: grafana
       service:
         type: ClusterIP
+      envValueFrom:
+        DISCORD_WEBHOOK_URL:
+          secretKeyRef:
+            name: discord-webhook
+            key: address
+        GF_DATABASE_PASSWORD:
+          secretKeyRef:
+            name: grafana-db
+            key: password
+        TIMESCALEDB_PASSWORD:
+          secretKeyRef:
+            name: timescaledb-grafana
+            key: password
+      alerting:
+        contactpoints.yaml:
+          apiVersion: 1
+          contactPoints:
+          - orgId: 1
+            name: discord
+            receivers:
+            - uid: discord-receiver
+              type: discord
+              settings:
+                url: ${DISCORD_WEBHOOK_URL}
+        policies.yaml:
+          apiVersion: 1
+          policies:
+          - orgId: 1
+            receiver: discord
+            group_by:
+            - alertname
+            - namespace
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 12h
     prometheus:
       prometheusSpec:
         enableRemoteWriteReceiver: true
@@ -64,13 +140,20 @@ spec:
             spec:
               storageClassName: nfs-csi
               accessModes:
-                - ReadWriteOnce
+              - ReadWriteOnce
               resources:
                 requests:
                   storage: 60Gi
               selector:
                 matchLabels:
                   app: prometheus
-
     alertmanager:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeEtcd:
       enabled: false
