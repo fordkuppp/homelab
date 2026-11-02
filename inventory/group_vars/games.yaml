@@ -17,5 +17,6 @@ pelican_node_uuid: ""     # runtime only
 pelican_node_token_id: "" # runtime only
 pelican_node_token: ""    # runtime only
 
-# The cloud image's `ubuntu` user is a sudoer; everything this group does is root work.
+# Everything this group does is root work. The `ubuntu` user gets NOPASSWD sudo
+# from the proxmox-vm module's cloud-init, so no become password is needed.
 ansible_become: true
