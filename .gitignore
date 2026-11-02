@@ -10,3 +10,6 @@ sops/secrets.yaml
 .idea/*
 
 .env
+
+# Local-only runbook. Everything a clone needs is in ansible/README.md.
+docs/runbooks/pelican.md

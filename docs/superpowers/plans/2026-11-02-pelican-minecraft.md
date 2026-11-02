@@ -1823,6 +1823,11 @@ now comes from the `tailscale_node` role.
 
 - [x] **Step 3: Write the runbook**
 
+> **Superseded after implementation.** `docs/runbooks/pelican.md` was written,
+> then untracked at the author's request — it is gitignored and local-only.
+> Everything a clone needs now lives in `ansible/README.md` under
+> [pelican-wings]. The step list below is kept as the record of what it covers.
+
 `docs/runbooks/pelican.md` covers the steps that have no API. Write it to
 contain, in order:
 

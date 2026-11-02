@@ -36,7 +36,8 @@ ansible-playbook playbooks/composite/wings.yaml \
 
 The node credentials come from the Panel and must exist first -- the Panel
 generates them when you create the Node, and there is no API to bootstrap them.
-See [`docs/runbooks/pelican.md`](../docs/runbooks/pelican.md).
+See [pelican-wings](#pelican-wings) for how to get them, and `docs/ip-plan.md`
+for why the VM takes `192.168.1.30`.
 
 ## baseline
 
@@ -202,13 +203,37 @@ containers, on the `games` group. The Panel half is a Flux app
 game servers want a whole machine's CPU and disk rather than a scheduler's share
 of one.
 
-### 1. Register the Node first
+### 1. Bring the Panel up and register the Node
 
-Wings cannot bootstrap itself. In the Panel: Admin -> Nodes -> Create, FQDN
-`wings-1.local.fordkuppp.me`, port `8080`, **SSL on**. The Panel then shows a
-`uuid`, `token_id` and `token`; store all three in Bitwarden and pass them at
-run time. Full walkthrough in
-[`docs/runbooks/pelican.md`](../docs/runbooks/pelican.md).
+Wings cannot bootstrap itself, and the Panel has no API to create a Node cold,
+so this order is not negotiable:
+
+1. **Panel** -- merge to `main`, then `flux -n flux-system reconcile
+   kustomization pelican --with-source`. Confirm
+   `https://panel.local.fordkuppp.me` loads.
+2. **Install wizard** -- the first visit serves `/installer`, which creates the
+   admin user and writes configuration into `/pelican-data`. **Keep the SQLite
+   default**: the PVC is `local-path` precisely because SQLite locking over NFS
+   corrupts.
+3. **Create the Node** -- Admin -> Nodes -> Create:
+
+   | Field | Value |
+   |---|---|
+   | FQDN | `wings-1.local.fordkuppp.me` |
+   | Daemon port | `8080` |
+   | SSL | **on** -- the Envoy gateway presents the wildcard cert |
+   | Daemon SFTP port | `2022` |
+
+   SSL is on even though Wings serves plain HTTP; see
+   [Why it is configured the way it is](#why-it-is-configured-the-way-it-is).
+
+4. The Panel then shows a `uuid`, a `token_id` and a `token`. Store all three in
+   Bitwarden and export their ids as `BWS_PELICAN_NODE_UUID_ID`,
+   `BWS_PELICAN_NODE_TOKEN_ID_ID` and `BWS_PELICAN_NODE_TOKEN_ID`.
+
+The tailnet auth key is separate: create a **tagged** pre-auth key for
+`tag:games` (declare the tag in `tagOwners` first) and export its id as
+`BWS_TS_GAMES_AUTHKEY_ID`.
 
 ### 2. Run it
 
@@ -245,7 +270,29 @@ cannot authenticate. The closing task prints the tailnet address to put in
   joins the tailnet only so the Bangkok edge VPS can forward player traffic to
   it directly, rather than hairpinning through the cluster's subnet router.
 
+### Afterwards
+
+- The node should turn **green** in the Panel UI. If it does not, the usual
+  causes are the gateway route (`curl -I https://wings-1.local.fordkuppp.me`)
+  and the node token -- in that order.
+- Create the server (a Fabric or Forge egg, allocated `192.168.1.30:25565`) and
+  **connect from the LAN first**. That isolates the server itself from the
+  public path before you add a second variable.
+- Only then expose it: feed the printed tailnet address into `caddy_l4_routes`
+  and follow [caddy-gateway](#caddy-gateway). Point `mc.fordkuppp.me` at the
+  gateway IP with the Cloudflare proxy **off** -- the proxy handles HTTP only,
+  and this is raw TCP.
+
 ### Scope
 
 Wings only. It does not create the Node in the Panel, create servers, or open
 any firewall port -- public exposure is the `caddy-gateway` role's job.
+
+### Adding a second Wings node
+
+One Wings daemon is one Panel "Node" and hosts many servers, so a second node is
+only needed for a second machine. Three changes, no new patterns: a
+`terragrunt/proxmox/vm/wings-2/` directory plus a `wings-2` entry under `games`
+in `inventory/hosts.yaml`; a copy of `kubernetes/apps/pelican/wings-1.yaml` with
+the name, hostname and `EndpointSlice` address changed (the wildcard cert
+already covers it); then register the Node and re-run `composite/wings.yaml`.

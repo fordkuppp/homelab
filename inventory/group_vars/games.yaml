@@ -12,7 +12,7 @@ tailscale_tags: "tag:games"
 tailscale_authkey: "" # runtime only
 
 # Node credentials the Panel generates when the Node is created. Runtime only,
-# same handling as above. See docs/runbooks/pelican.md for where they come from.
+# same handling as above. See ansible/README.md for where they come from.
 pelican_node_uuid: ""     # runtime only
 pelican_node_token_id: "" # runtime only
 pelican_node_token: ""    # runtime only
