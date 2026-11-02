@@ -148,9 +148,14 @@ the only genuinely irreplaceable data in the system.
 
 `general/backup` already exists as a dataset with an NFS share
 (`/mnt/general/backup`) and a daily snapshot task on a 14-day lifetime. Mount
-it on the Wings VM and point Wings' `local` backup driver at it. Zero new
+it on the Wings VM at Wings' `system.backup_directory`. Zero new
 infrastructure, zero cost, already snapshotted. The cloud-init image already
 installs `nfs-common`.
+
+Note that the *driver* (`wings` vs `s3`) is a Panel setting, not a key in
+`config.yml` — Wings has no `backups.driver`. Leaving the Panel on its default
+`wings` driver makes Wings write archives to `system.backup_directory`, which
+is the mount.
 
 Rejected: rustfs (`docker-1:9000`) — it lives on the VM being decommissioned
 (see P1). Cloudflare R2 — real storage and egress cost for multi-GB worlds,
@@ -248,13 +253,17 @@ keeps only the derper half. Its behaviour must not change.
 - Install the pinned Wings binary to `/usr/local/bin/wings`
   (`pelican_wings_version`, arch-aware URL).
 - Create `/etc/pelican` and `/var/lib/pelican`.
-- Mount `192.168.1.11:/mnt/general/backup` at `/var/lib/pelican/backups` via
-  `/etc/fstab` (`nfsvers=4`, `soft`), matching the rustfs compose mount options.
+- Mount `192.168.1.11:/mnt/general/backup` at `/var/lib/pelican/backups`
+  (Wings' default `system.backup_directory`) via `/etc/fstab`
+  (`nfsvers=4`, `soft`), matching the rustfs compose mount options.
 - Template `/etc/pelican/config.yml` from the node credentials
   (`uuid`, `token_id`, `token`) passed at run time from Bitwarden, plus static
   settings: `api.host: 0.0.0.0`, `api.port: 8080`, `api.ssl.enabled: false`,
-  `remote: https://panel.local.fordkuppp.me`, `allowed_origins`,
-  `backups.driver: local`, `system.data: /var/lib/pelican/volumes`.
+  `api.trusted_proxies: ["192.168.1.20/32"]` — Wings sits behind Envoy, and
+  flannel masquerades pod egress leaving the cluster, so requests arrive from
+  the k3s *node* address, not the pod CIDR,
+  `remote: https://panel.local.fordkuppp.me`, `allowed_origins`, and
+  `system.data: /var/lib/pelican/volumes`.
 - Install and enable the `wings.service` systemd unit from the Pelican docs
   (`After=docker.service`, `Requires=docker.service`, `PartOf=docker.service`).
 - A closing `debug` task printing the node's tailnet IPv4 and the
