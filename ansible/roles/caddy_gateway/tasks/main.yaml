@@ -114,15 +114,25 @@
     validate: "{{ caddy_custom_bin }} validate --adapter caddyfile --config %s"
   notify: Reload Caddy
 
+# Reload here rather than leaning on the Reload systemd handler: handlers flush
+# at the END of the play, so on a first install this start would run the apt
+# unit's ExecStart -- a Caddy with no layer4 -- which exits 1 on the layer4
+# block and aborts the play before the handler ever fires.
 - name: Enable and start Caddy
   ansible.builtin.systemd:
     name: caddy
     enabled: true
     state: started
+    daemon_reload: true
 
 - name: Next steps -- DNS and firewall for the gateway IP
   ansible.builtin.debug:
     msg:
       - "DNS: point each caddy_sites host -> {{ caddy_bind_ip }} (A record)"
       - "Firewall/provider SG on {{ caddy_bind_ip }}: open 443/tcp, 80/tcp (ACME)"
+      - >-
+        {{ 'Also open, for caddy_l4_routes: '
+           + (caddy_l4_routes | map(attribute='listen_port') | join('/tcp, ')) + '/tcp'
+           if caddy_l4_routes else 'No caddy_l4_routes configured.' }}
+      - "L4 hosts need the Cloudflare proxy OFF -- it carries HTTP only, not raw TCP"
       - "Upstreams resolve only if tailscale_accept_routes is true (currently: {{ tailscale_accept_routes | default(false) }})"
