@@ -7,3 +7,9 @@ resources:
   - loki.yaml
   - otel-collector.yaml
   - httproute.yaml
+  - flux-podmonitor.yaml
+  - extra-monitors.yaml
+  - istio-monitors.yaml
+  - grafana-secrets.yaml
+  - grafana-db.yaml
+  - envoy-proxy-monitor.yaml

@@ -4,3 +4,4 @@ metadata:
   name: gotify
   labels:
     k8up-backup: enabled
+    istio.io/dataplane-mode: ambient

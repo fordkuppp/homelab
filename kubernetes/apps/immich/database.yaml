@@ -7,4 +7,4 @@ spec:
   name: immich
   owner: admin
   cluster:
-    name: postgres
+    name: postgres18

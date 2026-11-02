@@ -43,7 +43,7 @@
       "description": "DERP relay: track derper against tailscale/tailscale releases",
       "managerFilePatterns": [
         "/^ansible/roles/tailscale_derp/defaults/main\\.yaml$/",
-        "/^inventory/group_vars/edge\\.yaml$/"
+        "/^ansible/inventory/group_vars/edge\\.yaml$/"
       ],
       "matchStrings": [
         "derper_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
@@ -56,7 +56,7 @@
       "description": "Pelican Wings: the daemon binary installed on the games group",
       "managerFilePatterns": [
         "/^ansible/roles/pelican_wings/defaults/main\\.yaml$/",
-        "/^inventory/group_vars/games\\.yaml$/"
+        "/^ansible/inventory/group_vars/games\\.yaml$/"
       ],
       "matchStrings": [
         "pelican_wings_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
@@ -69,7 +69,7 @@
       "description": "Caddy: rebuilt from source with caddy-l4, so the version is pinned here rather than apt",
       "managerFilePatterns": [
         "/^ansible/roles/caddy_gateway/defaults/main\\.yaml$/",
-        "/^inventory/group_vars/edge\\.yaml$/"
+        "/^ansible/inventory/group_vars/edge\\.yaml$/"
       ],
       "matchStrings": [
         "caddy_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
@@ -82,7 +82,7 @@
       "description": "caddy-l4: the layer4 module compiled into the custom Caddy build",
       "managerFilePatterns": [
         "/^ansible/roles/caddy_gateway/defaults/main\\.yaml$/",
-        "/^inventory/group_vars/edge\\.yaml$/"
+        "/^ansible/inventory/group_vars/edge\\.yaml$/"
       ],
       "matchStrings": [
         "caddy_l4_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
