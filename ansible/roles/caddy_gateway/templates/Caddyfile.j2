@@ -36,10 +36,10 @@
 			# matcher-less route is reached only once every matcher above has
 			# returned a verdict, and one whose byte count exceeds what the
 			# client sent never returns at all -- it waits out matching_timeout
-			# and the connection is dropped rather than landing here. Matching
-			# a single byte always succeeds, so a short handshake (a raw-IP
-			# connect) arrives here in milliseconds instead of hanging 3s.
-			@any regexp (?s). 4
+			# and the connection is dropped rather than landing here. One byte
+			# is the shortest read that can succeed, so even a 2-byte legacy
+			# ping lands here in milliseconds instead of hanging 3s.
+			@any regexp (?s). 1
 			route @any {
 {% if caddy_minecraft_fallback == 'close' %}
 				close
