@@ -9,7 +9,7 @@ composite (whole-machine) playbooks that chain them live in `playbooks/composite
 
 `composite/edge.yaml` runs the full stack on the `edge` group in order --
 baseline hardening, the DERP relay, then the gateway (which no-ops until
-`caddy_sites` or `caddy_l4_routes` is set):
+`caddy_sites`, `caddy_l4_routes` or `caddy_minecraft_servers` is set):
 
 ```fish
 cd ansible
@@ -147,7 +147,7 @@ over the tailnet. Use a tailnet `100.x` IP or a homelab LAN IP -- the latter
 works because `tailscale_accept_routes: true` is set for this group. Upstreams
 must be IPs, not MagicDNS names (this node runs with accept-dns off).
 
-### 3. Forward raw TCP with `caddy_l4_routes`
+### 3. Forward raw TCP
 
 HTTP reverse-proxying is not enough for a game server: Minecraft speaks its own
 protocol on `25565/tcp`. Upstream Caddy has no layer-4 proxy, so the role builds
@@ -158,20 +158,62 @@ installed locally** requirement. `caddy_version` and `caddy_l4_version` are
 pinned and Renovate-tracked; the built artifact is version-stamped, so a repeat
 run at the same versions skips the compile entirely.
 
-Each `caddy_l4_routes` entry is a `listen_port` and an `upstream`:
+Layer-4 listeners do not inherit `default_bind`, so the role writes
+`{{ caddy_bind_ip }}:<port>` explicitly -- without that, Caddy would also claim
+the port on derper's IP.
+
+#### Minecraft servers share one port: `caddy_minecraft_servers`
+
+`caddy_sites` routes HTTP by hostname because HTTP puts the hostname in the
+`Host` header and HTTPS in the TLS SNI. Minecraft has neither. It is still
+routable by hostname because the client copies the address the player typed
+into its handshake packet as plain UTF-8, which caddy-l4's `regexp` matcher
+reads out of the first bytes of the connection.
 
 ```yaml
-caddy_l4_routes:
-  - listen_port: 25565
+caddy_minecraft_servers:
+  - hostname: mc.games.fordkuppp.me
     upstream: "100.x.y.z:25565" # the Wings host's tailnet address
 ```
 
-Layer-4 listeners do not inherit `default_bind`, so the role writes
-`{{ caddy_bind_ip }}:{{ listen_port }}` explicitly -- without that, Caddy would
-also claim the port on derper's IP.
+Every server shares `caddy_minecraft_port` (25565), so **adding one is this
+entry and nothing else** -- the `*.games.fordkuppp.me` wildcard
+(`kubernetes/apps/dns/records.yaml`) already resolves the name, and the
+provider firewall port is already open.
+
+`caddy_minecraft_fallback` decides what happens to a connection matching no
+hostname -- a raw-IP connect, or an unknown name. `first` (the default) sends
+it to the first entry; `close` drops it, hiding the server from port scanners
+at the cost of being unable to test the path by IP.
+
+Two details of the matcher are load-bearing and are why the template, not you,
+computes its byte count. It reads *exactly* N bytes and reports no-match if
+fewer arrive, and a status ping sends only a little more than the hostname
+itself, so the only workable counts are `len(hostname)+5 .. +10`; the template
+uses `+7`. A shared constant cannot work, because two hostnames of different
+lengths have disjoint windows. For the same reason the catch-all route carries
+an always-true matcher rather than no matcher at all: a matcher-less route is
+reached only after every matcher above returns a verdict, and one still waiting
+on bytes that will never arrive never does -- the connection would hang for
+`matching_timeout` and be dropped instead of falling through.
+
+#### Other raw TCP: `caddy_l4_routes`
+
+For non-Minecraft protocols, which have no hostname to match on. One port per
+upstream:
+
+```yaml
+caddy_l4_routes:
+  - listen_port: 27015
+    upstream: "100.x.y.z:27015"
+```
+
+Each entry needs its own port opened in the provider firewall, which is exactly
+the per-server toil `caddy_minecraft_servers` avoids.
 
 There is no PROXY protocol here: Fabric and Forge cannot read it, so the server
-sees every player arriving from the gateway's IP. **Ban by UUID, not by IP.**
+sees every player arriving from the gateway's IP. **Ban by UUID, not by IP** --
+an IP ban bans everyone.
 
 ### 4. Run it
 
@@ -187,13 +229,15 @@ the systemd drop-in restarts it instead.
 ### Afterwards
 
 - **Open `443/tcp` and `80/tcp` (ACME) on `caddy_bind_ip`** in the provider's
-  cloud firewall -- same separate-layer caveat as the other playbooks. A
-  `caddy_l4_routes` entry needs its own port opened too (`25565/tcp` for
-  Minecraft).
+  cloud firewall -- same separate-layer caveat as the other playbooks. Open
+  `25565/tcp` once for `caddy_minecraft_servers` (all of them share it), plus a
+  port per `caddy_l4_routes` entry. The play's final task lists them.
 - Caddy fetches a Let's Encrypt cert per site automatically on first request.
   Layer-4 routes are pass-through and get no cert.
-- Keep private services off the public IP: anything in `caddy_sites` or
-  `caddy_l4_routes` is exposed to the internet.
+- **Layer-4 hostnames need the Cloudflare proxy off** (grey cloud). The proxy
+  carries HTTP only; raw TCP through it is dropped.
+- Keep private services off the public IP: anything in `caddy_sites`,
+  `caddy_l4_routes` or `caddy_minecraft_servers` is exposed to the internet.
 
 ### Scope
 
@@ -271,7 +315,7 @@ ansible-playbook playbooks/pelican-wings.yaml \
 The role asserts the three credentials are non-empty before touching the host,
 so a forgotten `-e` fails immediately rather than installing a daemon that
 cannot authenticate. The closing task prints the tailnet address to put in
-`caddy_l4_routes`.
+`caddy_minecraft_servers`.
 
 ### Why it is configured the way it is
 
@@ -300,10 +344,10 @@ cannot authenticate. The closing task prints the tailnet address to put in
 - Create the server (a Fabric or Forge egg, allocated `192.168.1.30:25565`) and
   **connect from the LAN first**. That isolates the server itself from the
   public path before you add a second variable.
-- Only then expose it: feed the printed tailnet address into `caddy_l4_routes`
-  and follow [caddy-gateway](#caddy-gateway). Point `mc.fordkuppp.me` at the
-  gateway IP with the Cloudflare proxy **off** -- the proxy handles HTTP only,
-  and this is raw TCP.
+- Only then expose it: add the printed tailnet address to
+  `caddy_minecraft_servers` under a `*.games.fordkuppp.me` name and follow
+  [caddy-gateway](#caddy-gateway). The wildcard record already resolves it and
+  25565 is already open, so no DNS or firewall change is needed per server.
 
 ### Scope
 

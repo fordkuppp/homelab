@@ -80,9 +80,10 @@
     msg:
       - "Wings API (via the cluster gateway): https://{{ pelican_wings_fqdn }}"
       - "Tailnet IPv4 of this node: {{ tailscale_ipv4 | default('unknown -- run the tailscale_node role') }}"
-      - "Set this in inventory/group_vars/edge.yaml so Caddy can forward Minecraft:"
+      - "Add each server to inventory/group_vars/edge.yaml so Caddy forwards it:"
       - >-
-        caddy_l4_routes:
-        [{ listen_port: 25565,
+        caddy_minecraft_servers:
+        [{ hostname: <name>.games.fordkuppp.me,
         upstream: "{{ tailscale_ipv4 | default('<tailnet-ip>') }}:25565" }]
+      - "They all share 25565 and are told apart by hostname, so no new DNS record and no new firewall port."
       - "Then: ansible-playbook playbooks/caddy-gateway.yaml"

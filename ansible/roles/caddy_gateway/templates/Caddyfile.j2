@@ -4,11 +4,11 @@
 	# Keep every listener (incl. the :80 ACME/redirect vhost) on the second
 	# IP so Caddy never touches derper's :443 on the first IP.
 	default_bind {{ caddy_bind_ip }}
-{% if caddy_l4_routes %}
+{% if caddy_l4_routes or caddy_minecraft_servers %}
 
-	# Raw TCP (game servers). default_bind does NOT apply to layer4 listeners,
-	# so the bind IP is explicit here -- otherwise these listen on 0.0.0.0 and
-	# spill onto derper's IP.
+	# Raw TCP. default_bind does NOT apply to layer4 listeners, so the bind IP
+	# is explicit here -- otherwise these listen on 0.0.0.0 and spill onto
+	# derper's IP.
 	layer4 {
 {% for route in caddy_l4_routes %}
 		{{ caddy_bind_ip }}:{{ route.listen_port }} {
@@ -17,6 +17,38 @@
 			}
 		}
 {% endfor %}
+{% if caddy_minecraft_servers %}
+		# One listener for every Minecraft server. Routes are matched against
+		# the hostname the client puts in its handshake, so which server you
+		# reach depends on the name you typed, not the port you connected to.
+		{{ caddy_bind_ip }}:{{ caddy_minecraft_port }} {
+{% for server in caddy_minecraft_servers %}
+			# Byte count is hostname length + 7 -- the matcher needs exactly that
+			# many bytes to exist, and a status ping sends barely more than the
+			# hostname. The role defaults explain the window.
+			@{{ server.hostname | replace('.', '_') }} regexp (?i){{ server.hostname | replace('.', '\\.') }} {{ server.hostname | length + 7 }}
+			route @{{ server.hostname | replace('.', '_') }} {
+				proxy {{ server.upstream }}
+			}
+{% endfor %}
+			# Matched nothing above: connected by raw IP, or an unknown name.
+			# This route needs a matcher even though it accepts everything. A
+			# matcher-less route is reached only once every matcher above has
+			# returned a verdict, and one whose byte count exceeds what the
+			# client sent never returns at all -- it waits out matching_timeout
+			# and the connection is dropped rather than landing here. Matching
+			# a single byte always succeeds, so a short handshake (a raw-IP
+			# connect) arrives here in milliseconds instead of hanging 3s.
+			@any regexp (?s). 4
+			route @any {
+{% if caddy_minecraft_fallback == 'close' %}
+				close
+{% else %}
+				proxy {{ caddy_minecraft_servers[0].upstream }}
+{% endif %}
+			}
+		}
+{% endif %}
 	}
 {% endif %}
 }
