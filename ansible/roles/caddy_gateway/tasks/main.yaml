@@ -3,10 +3,36 @@
   ansible.builtin.assert:
     that:
       - caddy_bind_ip | length > 0
-      - (caddy_sites | length > 0) or (caddy_l4_routes | length > 0)
+      - (caddy_sites | length > 0)
+        or (caddy_l4_routes | length > 0)
+        or (caddy_minecraft_servers | length > 0)
     fail_msg: >-
       Set caddy_bind_ip (the VPS's second public IP) and at least one entry in
-      caddy_sites or caddy_l4_routes in inventory/group_vars/edge.yaml.
+      caddy_sites, caddy_l4_routes or caddy_minecraft_servers in
+      inventory/group_vars/edge.yaml.
+
+# Caddy rejects two listeners on one address, but only after the build and the
+# render -- and the message does not name the duplicate. Catch it up front.
+- name: Fail fast on a Minecraft port already claimed by an L4 route
+  ansible.builtin.assert:
+    that:
+      - caddy_minecraft_port not in (caddy_l4_routes | map(attribute='listen_port') | list)
+    fail_msg: >-
+      caddy_minecraft_port ({{ caddy_minecraft_port }}) is also a listen_port in
+      caddy_l4_routes. Minecraft servers share one port and are told apart by
+      hostname, so they need that port to themselves -- drop the caddy_l4_routes
+      entry, or move one of them.
+  when: caddy_minecraft_servers | length > 0
+
+- name: Fail fast on an unknown Minecraft fallback
+  ansible.builtin.assert:
+    that:
+      - caddy_minecraft_fallback in ['first', 'close']
+    fail_msg: >-
+      caddy_minecraft_fallback must be "first" (send unmatched connections to
+      the first caddy_minecraft_servers entry) or "close" (drop them), not
+      "{{ caddy_minecraft_fallback }}".
+  when: caddy_minecraft_servers | length > 0
 
 - name: Install prerequisites for the Caddy apt repository
   ansible.builtin.apt:
@@ -134,5 +160,10 @@
         {{ 'Also open, for caddy_l4_routes: '
            + (caddy_l4_routes | map(attribute='listen_port') | join('/tcp, ')) + '/tcp'
            if caddy_l4_routes else 'No caddy_l4_routes configured.' }}
+      - >-
+        {{ 'Minecraft: ' + (caddy_minecraft_servers | length | string)
+           + ' server(s) sharing ' + (caddy_minecraft_port | string) + '/tcp -- '
+           + (caddy_minecraft_servers | map(attribute='hostname') | join(', '))
+           if caddy_minecraft_servers else 'No caddy_minecraft_servers configured.' }}
       - "L4 hosts need the Cloudflare proxy OFF -- it carries HTTP only, not raw TCP"
       - "Upstreams resolve only if tailscale_accept_routes is true (currently: {{ tailscale_accept_routes | default(false) }})"

@@ -14,3 +14,23 @@ spec:
       recordTTL: 300
       targets:
         - 117.18.125.44 # edge VPS, first IP (derper)
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: games
+  namespace: dns
+  annotations:
+    # Minecraft is raw TCP. The Cloudflare proxy only carries HTTP, so it must
+    # stay off (grey cloud) or every connection is dropped.
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  endpoints:
+    # Wildcard on purpose: game servers are told apart by the hostname in the
+    # Minecraft handshake, which Caddy matches on the shared 25565 listener.
+    # Adding a server is then an Ansible change alone -- no record per server.
+    - dnsName: "*.games.fordkuppp.me"
+      recordType: A
+      recordTTL: 300
+      targets:
+        - 117.18.125.45 # edge VPS, second IP (Caddy)

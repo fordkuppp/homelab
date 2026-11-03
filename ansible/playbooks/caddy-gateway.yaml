@@ -8,7 +8,11 @@
   become: true
   roles:
     # Guarded so composite/edge.yml can import this unconditionally; it no-ops
-    # until you define an HTTP site in caddy_sites or a raw-TCP forward in
-    # caddy_l4_routes. A game-server forward with no HTTP sites is legitimate.
+    # until you define an HTTP site in caddy_sites, a raw-TCP forward in
+    # caddy_l4_routes, or a game server in caddy_minecraft_servers. Any one of
+    # them alone is legitimate -- game servers with no HTTP sites is the norm.
     - role: caddy_gateway
-      when: (caddy_sites | length > 0) or (caddy_l4_routes | default([]) | length > 0)
+      when: >-
+        (caddy_sites | length > 0)
+        or (caddy_l4_routes | default([]) | length > 0)
+        or (caddy_minecraft_servers | default([]) | length > 0)

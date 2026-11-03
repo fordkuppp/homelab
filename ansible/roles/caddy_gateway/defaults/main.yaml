@@ -16,14 +16,51 @@ caddy_email: "you@example.com"
 caddy_sites: []
 
 # --- Layer 4 (raw TCP) routes ---
-# Stock Caddy only speaks HTTP. Game protocols like Minecraft are raw TCP,
-# which needs the caddy-l4 module and therefore a custom xcaddy build (below).
-# Each entry: a port to listen on (bound to caddy_bind_ip) and an upstream this
-# node can reach over the tailnet.
+# Stock Caddy only speaks HTTP. Raw TCP needs the caddy-l4 module and therefore
+# a custom xcaddy build (below). Each entry: a port to listen on (bound to
+# caddy_bind_ip) and an upstream this node can reach over the tailnet. One port
+# per upstream -- use caddy_minecraft_servers instead for game servers, which
+# can share a single port.
 #   caddy_l4_routes:
-#     - listen_port: 25565
-#       upstream: 100.64.0.5:25565
+#     - listen_port: 27015
+#       upstream: 100.64.0.5:27015
 caddy_l4_routes: []
+
+# --- Minecraft servers (hostname-routed, sharing one port) ---
+# caddy_sites routes HTTP by hostname because HTTP puts it in the Host header
+# and HTTPS in the TLS SNI. Minecraft has neither. What makes hostname routing
+# possible anyway is that the client copies the address the player typed into
+# its handshake packet as plain UTF-8, so the regexp matcher can read it out of
+# the first bytes of the connection.
+#
+# The payoff is that every server shares one port: adding one needs no new DNS
+# record (a *.games wildcard already resolves it) and no new firewall port.
+#   caddy_minecraft_servers:
+#     - hostname: mc.games.example.com
+#       upstream: 100.64.0.5:25565
+caddy_minecraft_servers: []
+caddy_minecraft_port: 25565
+
+# Where connections that match no hostname go -- a raw-IP connect, or a name
+# with no route. "first" sends them to the first caddy_minecraft_servers entry;
+# "close" drops them, hiding the server from port scanners at the cost of
+# being unable to test the path by IP.
+caddy_minecraft_fallback: first
+
+# NOTE ON THE MATCHER BYTE COUNT (derived in the template, deliberately not a
+# knob). caddy-l4's regexp matcher does io.ReadFull of exactly `count` bytes and
+# returns no-match if fewer arrive, so count is an upper bound on what the
+# client sends -- not slack. For a hostname of length L, measured against a real
+# client, the only values that work are L+5 .. L+10:
+#
+#   L+5   the hostname ends here (1 length + 1 packet id + 2 protocol
+#         + 1 address length, then L bytes of hostname)
+#   L+10  everything a status ping sends before it waits for the server
+#         (the above, plus 2 port + 1 next-state + 2 status request)
+#
+# The template uses L+7, the middle of that window, which also stays valid if
+# the protocol varint is 1 or 3 bytes instead of 2. A single shared constant
+# cannot work: two hostnames of different lengths have disjoint windows.
 
 # --- Custom build (cross-compiled on the Ansible controller; needs Go there) ---
 # Pinned so a rebuild is reproducible and Renovate can propose bumps. The apt
