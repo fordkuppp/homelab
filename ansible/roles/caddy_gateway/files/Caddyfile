@@ -91,9 +91,14 @@
 # terminates TLS for *.app.fordkuppp.me itself, so Caddy re-encrypts to the
 # gateway's LAN VIP with the site's hostname as SNI and checks the certificate
 # against it. The upstream is an IP, so the SNI has to be given explicitly.
+#
+# header_up Host is load-bearing: for an HTTPS upstream Caddy rewrites Host to
+# the upstream address (192.168.1.3:443), and Envoy routes on Host, so without
+# it every request is a 404 route_not_found even though TLS succeeds.
 share.app.fordkuppp.me {
 	import anubis
 	reverse_proxy https://192.168.1.3:443 {
+		header_up Host {host}
 		transport http {
 			tls_server_name share.app.fordkuppp.me
 		}
