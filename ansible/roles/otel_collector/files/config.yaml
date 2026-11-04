@@ -52,7 +52,7 @@ receivers:
             - target_label: instance
               replacement: derp-bkk-01
 
-  hostmetrics:
+  host_metrics:
     collection_interval: 30s
     scrapers:
       cpu: {}
@@ -73,15 +73,23 @@ processors:
 
   batch: {}
 
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [system]
     system:
       hostname_sources: [os]
 
   # Host metrics carry no job/instance of their own. Prometheus remote write
   # derives those labels from service.name and service.instance.id.
+  #
+  # host.name is forced because the OS hostname is a generic "ubuntu" (that is
+  # what journald stamps on every log line); derp-bkk-01 matches the
+  # instance label the metrics already use. service.name is insert-only, so
+  # the per-unit names on logs survive.
   resource/host:
     attributes:
+      - key: host.name
+        value: derp-bkk-01
+        action: upsert
       - key: service.name
         value: edge-host
         action: insert
@@ -104,7 +112,7 @@ processors:
     keys: [service.name]
 
 exporters:
-  otlphttp:
+  otlp_http:
     endpoint: https://otel-http.local.fordkuppp.me
 
 service:
@@ -112,13 +120,13 @@ service:
   pipelines:
     logs:
       receivers: [journald]
-      processors: [memory_limiter, transform/journald, groupbyattrs/service, batch]
-      exporters: [otlphttp]
+      processors: [memory_limiter, transform/journald, groupbyattrs/service, resource/host, batch]
+      exporters: [otlp_http]
     metrics:
       receivers: [prometheus]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
     metrics/host:
-      receivers: [hostmetrics]
-      processors: [memory_limiter, resourcedetection/system, resource/host, batch]
-      exporters: [otlphttp]
+      receivers: [host_metrics]
+      processors: [memory_limiter, resource_detection/system, resource/host, batch]
+      exporters: [otlp_http]
