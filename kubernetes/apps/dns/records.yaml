@@ -28,7 +28,7 @@ spec:
   endpoints:
     # Wildcard on purpose: game servers are told apart by the hostname in the
     # Minecraft handshake, which Caddy matches on the shared 25565 listener.
-    # Adding a server is then an Ansible change alone -- no record per server.
+    # Adding a server is then one line in the Caddyfile -- no record per server.
     - dnsName: "*.games.fordkuppp.me"
       recordType: A
       recordTTL: 300
@@ -46,8 +46,9 @@ metadata:
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   endpoints:
-    # Wildcard, like *.games: a public HTTP app is then a caddy_sites entry on
-    # the VPS plus an HTTPRoute on the https-public listener, with no DNS step.
+    # Wildcard, like *.games: a public HTTP app is then a site block in the
+    # VPS's Caddyfile plus an HTTPRoute on the https-public listener, with no
+    # DNS step.
     - dnsName: "*.app.fordkuppp.me"
       recordType: A
       recordTTL: 300

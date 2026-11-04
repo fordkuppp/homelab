@@ -71,4 +71,5 @@ Everything internet-facing resolves to the edge VPS, never to the LAN:
 
 All three are `DNSEndpoint`s in `kubernetes/apps/dns/records.yaml`, Cloudflare
 proxy off. A public HTTP app is an HTTPRoute on the gateway's `https-public`
-listener plus a `caddy_sites` entry; the wildcard already resolves it.
+listener plus a site block in `ansible/roles/caddy_gateway/files/Caddyfile`;
+the wildcard already resolves it.
