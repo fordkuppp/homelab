@@ -1,0 +1,80 @@
+# Two routes for one hostname so that only uploading needs a login.
+#
+# `send-upload` carries the exact paths that create content -- the upload page,
+# the websocket the browser streams the file over, the legacy POST endpoint --
+# plus the OIDC callback and logout paths the gateway itself answers. The
+# SecurityPolicy in securitypolicy.yaml attaches to this route alone.
+#
+# `send` is everything else: the download page, its metadata and blob API, and
+# the static bundle both pages share. A recipient never meets a login screen.
+# Exact matches outrank the prefix match, so the split is deterministic.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: send-upload
+  namespace: send
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "share.app.fordkuppp.me"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /
+        - path:
+            type: Exact
+            value: /api/ws
+        - path:
+            type: Exact
+            value: /api/upload
+        - path:
+            type: Exact
+            value: /oauth2/callback
+        - path:
+            type: Exact
+            value: /logout
+      backendRefs:
+        - name: send
+          port: 1443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: send
+  namespace: send
+spec:
+  parentRefs:
+    - name: tailscale-gateway
+      namespace: tailscale
+  hostnames:
+    - "share.app.fordkuppp.me"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: send
+          port: 1443
+---
+# Uploads are a long-lived websocket and downloads can be 2 GB over a slow
+# link; neither fits Envoy's default request timeout.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: send
+  namespace: send
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: send
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: send-upload
+  timeout:
+    http:
+      requestTimeout: "0s"

@@ -1,0 +1,50 @@
+---
+# Upstream ships a .deb with a template unit (anubis@.service) that reads
+# /etc/anubis/<instance>.env, so the install is the package plus two rendered
+# files. The download is version-stamped so a rerun at the same version is a
+# no-op and a bump replaces the package in place.
+- name: Create the package cache directory
+  ansible.builtin.file:
+    path: "{{ anubis_deb_cache | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download the Anubis package
+  ansible.builtin.get_url:
+    url: "{{ anubis_deb_url }}"
+    dest: "{{ anubis_deb_cache }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the Anubis package
+  ansible.builtin.apt:
+    deb: "{{ anubis_deb_cache }}"
+  notify: Restart Anubis
+
+- name: Render the instance environment
+  ansible.builtin.template:
+    src: instance.env.j2
+    dest: "/etc/anubis/{{ anubis_instance }}.env"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Anubis
+
+- name: Render the bot policy
+  ansible.builtin.template:
+    src: botPolicies.yaml.j2
+    dest: "/etc/anubis/{{ anubis_instance }}.botPolicies.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Anubis
+
+- name: Enable and start the Anubis instance
+  ansible.builtin.systemd:
+    name: "anubis@{{ anubis_instance }}"
+    enabled: true
+    state: started
+    daemon_reload: true

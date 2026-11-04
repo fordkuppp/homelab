@@ -1,0 +1,11 @@
+---
+# Bot challenge for the public HTTP sites on the edge VPS. Runs beside Caddy in
+# subrequest mode: Caddy asks it to vet each request and serves the challenge
+# page from the same hostname, so no extra DNS record or port is needed. Raw
+# TCP forwards (game servers) are untouched -- Anubis only speaks HTTP.
+- name: Install the Anubis bot challenge
+  hosts: edge
+  become: true
+  roles:
+    - role: anubis
+      when: caddy_anubis_enabled | default(false)

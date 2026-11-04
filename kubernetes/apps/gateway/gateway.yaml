@@ -26,3 +26,20 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Internet-facing apps. Traffic arrives from Caddy on the edge VPS, which
+    # terminates the public TLS and re-encrypts to this listener over the
+    # tailnet. Terminating TLS here too (rather than a plain-HTTP listener)
+    # keeps Envoy's OIDC filter on its documented footing: it sees HTTPS
+    # natively, so no forwarded-proto trust is involved. cert-manager issues
+    # the wildcard from the annotation above, same as the local one.
+    - name: https-public
+      protocol: HTTPS
+      port: 443
+      hostname: "*.app.fordkuppp.me"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-app-tls
+      allowedRoutes:
+        namespaces:
+          from: All

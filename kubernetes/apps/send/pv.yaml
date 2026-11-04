@@ -1,0 +1,21 @@
+# Uploads go to TrueNAS rather than local-path because 2 GB files add up fast
+# and the node disk is small. Capacity is nominal -- NFS does not enforce it.
+# The directory must exist and be owned by uid 1000 (the image's `app` user)
+# before the pod starts; see docs/runbooks/send.md.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: send-uploads-pv
+  labels:
+    app: send
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-csi
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: send-uploads-pv
+    volumeAttributes:
+      server: 192.168.1.11
+      share: /mnt/general/data/send/uploads

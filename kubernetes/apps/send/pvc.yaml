@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: send-uploads-pvc
+  namespace: send
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 50Gi
+  volumeName: send-uploads-pv
+---
+# Valkey keeps Send's metadata (one hash per upload, with the expiry TTL). It
+# is tiny and append-only-logged, so local-path is enough; losing it would
+# orphan the files on disk, which the cleanup CronJob sweeps up anyway.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: send-valkey-pvc
+  namespace: send
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi

@@ -23,6 +23,7 @@ resources:
   - pelican.yaml
   - pocket-id.yaml
   - postgres.yaml
+  - send.yaml
   - sops.yaml
   - syncthing.yaml
   - systems-install.yaml

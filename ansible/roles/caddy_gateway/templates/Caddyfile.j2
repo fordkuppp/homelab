@@ -53,8 +53,42 @@
 {% endif %}
 }
 
+{% if caddy_anubis_enabled %}
+# Anubis in subrequest mode. forward_auth asks it for a verdict on every
+# request; a 401 means "challenge first", so the client is bounced to the
+# challenge page, which Caddy serves from this same host by proxying the
+# /.within.website/ prefix to Anubis. Anubis never sees the upstream -- that
+# stays Caddy's job -- so one instance covers every site.
+(anubis) {
+	route {
+		reverse_proxy /.within.website/* {{ caddy_anubis_upstream }}
+		forward_auth {{ caddy_anubis_upstream }} {
+			uri /.within.website/x/cmd/anubis/api/check
+			trusted_proxies private_ranges
+			@unauthorized status 401
+			handle_response @unauthorized {
+				redir * /.within.website/?redir={uri} 307
+			}
+		}
+	}
+}
+{% endif %}
+
 {% for site in caddy_sites %}
 {{ site.host }} {
+{% if caddy_anubis_enabled and site.anubis | default(true) %}
+	import anubis
+{% endif %}
+{% if site.tls | default(false) %}
+	# The upstream is an IP, so the SNI (and the name the certificate is
+	# checked against) has to be given explicitly.
+	reverse_proxy https://{{ site.upstream }} {
+		transport http {
+			tls_server_name {{ site.host }}
+		}
+	}
+{% else %}
 	reverse_proxy {{ site.upstream }}
+{% endif %}
 }
 {% endfor %}
