@@ -1,0 +1,124 @@
+# OpenTelemetry Collector on the edge VPS. Hand-written -- Ansible copies it
+# as-is and validates it with the installed binary before restarting.
+#
+# Everything goes to the cluster's collector over the tailnet
+# (otel-http.local.fordkuppp.me resolves to the Envoy gateway's LAN VIP, which
+# the VPS reaches through the homelab subnet route). That collector already
+# writes metrics to Prometheus and logs to Loki, so nothing in the cluster
+# changes for this box.
+
+extensions:
+  # Remembers the journal cursor across restarts, so a restart neither drops
+  # nor re-sends log lines.
+  file_storage/journald:
+    directory: /var/lib/otelcol-contrib/journald
+
+receivers:
+  journald:
+    # Ubuntu keeps the persistent journal here. The receiver's default is the
+    # volatile /run/log/journal, which on this box holds almost nothing.
+    directory: /var/log/journal
+    units:
+      - caddy
+      - anubis@caddy
+      - derper
+      - tailscaled
+      - fail2ban
+      - ssh
+    priority: info
+    start_at: end
+    storage: file_storage/journald
+    # MESSAGE becomes the body, PRIORITY the severity, and the unit name
+    # lands in the journald._SYSTEMD_UNIT attribute used below.
+    convert_to_semantic_conventions: true
+
+  prometheus:
+    config:
+      scrape_configs:
+        # Caddy's admin endpoint. Per-host HTTP metrics come from the
+        # `metrics { per_host }` option in the Caddyfile.
+        - job_name: caddy
+          scrape_interval: 30s
+          static_configs:
+            - targets: [localhost:2019]
+          relabel_configs:
+            - target_label: instance
+              replacement: derp-bkk-01
+        - job_name: anubis
+          scrape_interval: 30s
+          static_configs:
+            - targets: [127.0.0.1:9090]
+          relabel_configs:
+            - target_label: instance
+              replacement: derp-bkk-01
+
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      filesystem: {}
+      disk: {}
+      network: {}
+
+processors:
+  # The VPS has under 1 GB of RAM and also runs Caddy, derper and Anubis.
+  # Refuse data rather than let the collector be the thing the OOM killer
+  # picks.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 150
+    spike_limit_mib: 40
+
+  batch: {}
+
+  resourcedetection/system:
+    detectors: [system]
+    system:
+      hostname_sources: [os]
+
+  # Host metrics carry no job/instance of their own. Prometheus remote write
+  # derives those labels from service.name and service.instance.id.
+  resource/host:
+    attributes:
+      - key: service.name
+        value: edge-host
+        action: insert
+      - key: service.instance.id
+        value: derp-bkk-01
+        action: insert
+
+  # Name each log stream after its unit (caddy, derper, anubis@caddy, ...).
+  # Loki indexes service.name only as a RESOURCE attribute, so it is set per
+  # record here and lifted onto the resource by groupbyattrs below.
+  transform/journald:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["service.name"], attributes["journald._SYSTEMD_UNIT"])
+          - replace_pattern(attributes["service.name"], "\\.service$", "")
+
+  groupbyattrs/service:
+    keys: [service.name]
+
+exporters:
+  otlphttp:
+    endpoint: https://otel-http.local.fordkuppp.me
+
+service:
+  extensions: [file_storage/journald]
+  pipelines:
+    logs:
+      receivers: [journald]
+      processors: [memory_limiter, transform/journald, groupbyattrs/service, batch]
+      exporters: [otlphttp]
+    metrics:
+      receivers: [prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp]
+    metrics/host:
+      receivers: [hostmetrics]
+      processors: [memory_limiter, resourcedetection/system, resource/host, batch]
+      exporters: [otlphttp]

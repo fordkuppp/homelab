@@ -60,6 +60,12 @@
 	# public IP so Caddy never touches derper's :443 on the first one.
 	default_bind 117.18.125.45
 
+	# Prometheus metrics on the admin endpoint (localhost:2019/metrics), labelled
+	# per site. The OpenTelemetry Collector on this box scrapes them.
+	metrics {
+		per_host
+	}
+
 	# Raw TCP. default_bind does NOT apply to layer4 listeners, so the IP is
 	# explicit here -- otherwise this would listen on 0.0.0.0 and spill onto
 	# derper's IP.

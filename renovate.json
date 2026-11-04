@@ -102,6 +102,18 @@
       ],
       "depNameTemplate": "TecharoHQ/anubis",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "OpenTelemetry Collector contrib: the .deb installed on the edge group",
+      "managerFilePatterns": [
+        "/^ansible/roles/otel_collector/defaults/main\\.yaml$/"
+      ],
+      "matchStrings": [
+        "otelcol_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "open-telemetry/opentelemetry-collector-releases",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
