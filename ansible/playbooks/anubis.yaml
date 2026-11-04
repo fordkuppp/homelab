@@ -8,4 +8,4 @@
   become: true
   roles:
     - role: anubis
-      when: caddy_anubis_enabled | default(false)
+      when: anubis_enabled | default(false)
