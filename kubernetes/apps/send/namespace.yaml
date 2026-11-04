@@ -1,0 +1,8 @@
+# Not enrolled in k8up on purpose: everything here is ephemeral by design.
+# Uploads live at most MAX_EXPIRE_SECONDS (7 days) and the Valkey metadata
+# expires with them, so a restore would only ever bring back files that had
+# already lapsed.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: send

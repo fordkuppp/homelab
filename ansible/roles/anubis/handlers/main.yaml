@@ -1,0 +1,5 @@
+---
+- name: Restart Anubis
+  ansible.builtin.systemd:
+    name: "anubis@{{ anubis_instance }}"
+    state: restarted

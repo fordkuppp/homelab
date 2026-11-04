@@ -1,0 +1,45 @@
+# Send's filesystem backend never deletes expired uploads. The Valkey hash
+# expires on its own, after which the file is unreachable -- but still on
+# disk. Only the download-limit path unlinks a file.
+#
+# Send names each file "<expiry-days>-<id>", with the expiry rounded down to
+# whole days (minimum 1), so the name alone says when a file lapsed. This job
+# deletes anything older than its own prefix. `find -mtime +N` matches files
+# at least N+1 days old, so it always runs a little late and never early.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: send-expired-uploads
+  namespace: send
+spec:
+  schedule: "30 3 * * *"
+  timeZone: Asia/Bangkok
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sweep
+              image: busybox:1.37.0
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  cd /uploads
+                  for file in *-*; do
+                    [ -f "$file" ] || continue
+                    days=${file%%-*}
+                    find "$file" -maxdepth 0 -type f -mtime +"$days" -print -delete
+                  done
+              volumeMounts:
+                - name: uploads
+                  mountPath: /uploads
+          volumes:
+            - name: uploads
+              persistentVolumeClaim:
+                claimName: send-uploads-pvc

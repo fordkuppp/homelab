@@ -1,0 +1,29 @@
+# Pinned; Renovate tracks TecharoHQ/anubis releases (see renovate.json).
+anubis_version: "v1.28.2"
+
+# One systemd instance (anubis@<name>) with its env and policy files named
+# after it under /etc/anubis/. A single instance vets every Caddy site because
+# it runs in subrequest mode -- it never proxies anything itself.
+anubis_instance: caddy
+
+# Loopback only. The VPS has two public IPs and Anubis's own defaults bind
+# every interface; Caddy is the only client and lives on the same host.
+anubis_bind: 127.0.0.1:8923
+anubis_metrics_bind: 127.0.0.1:9090
+
+# Hosts Anubis may send a client back to after a passed challenge. Unset, it
+# redirects anywhere the ?redir= parameter says -- an open redirect. Derived
+# from the Caddy sites because those are the only hosts a challenge can come
+# from.
+anubis_redirect_domains: "{{ caddy_sites | default([]) | map(attribute='host') | list }}"
+
+# Shown on the error page so a wrongly-blocked human has someone to write to.
+anubis_webmaster_email: ""
+
+# Serve a robots.txt that disallows AI scrapers and generic crawlers on every
+# protected site. Off because the apps behind it manage their own robots.txt
+# (or have no reason to be indexed at all).
+anubis_serve_robots_txt: false
+
+anubis_deb_url: "https://github.com/TecharoHQ/anubis/releases/download/{{ anubis_version }}/anubis_{{ anubis_version | regex_replace('^v', '') }}_amd64.deb"
+anubis_deb_cache: "/var/cache/anubis/anubis_{{ anubis_version }}_amd64.deb"
