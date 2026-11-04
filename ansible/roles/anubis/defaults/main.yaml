@@ -11,11 +11,14 @@ anubis_instance: caddy
 anubis_bind: 127.0.0.1:8923
 anubis_metrics_bind: 127.0.0.1:9090
 
+# Install at all. The Caddyfile's `import anubis` lines assume it is on: with
+# it off they would forward_auth to a closed port and every request would 502.
+anubis_enabled: false
+
 # Hosts Anubis may send a client back to after a passed challenge. Unset, it
-# redirects anywhere the ?redir= parameter says -- an open redirect. Derived
-# from the Caddy sites because those are the only hosts a challenge can come
-# from.
-anubis_redirect_domains: "{{ caddy_sites | default([]) | map(attribute='host') | list }}"
+# redirects anywhere the ?redir= parameter says -- an open redirect. List every
+# hostname in the Caddyfile that imports the anubis snippet.
+anubis_redirect_domains: []
 
 # Shown on the error page so a wrongly-blocked human has someone to write to.
 anubis_webmaster_email: ""

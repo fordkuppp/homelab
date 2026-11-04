@@ -17,8 +17,10 @@ derp_hostname: "derp.fordkuppp.me"
 derper_version: "v1.104.2" # current stable, looked up 2026-10-21; Renovate can bump
 
 # --- IP split (two public IPs on this box) ---
-derp_bind_ip: "117.18.125.44"  # first public IP -- derper binds here
-caddy_bind_ip: "117.18.125.45" # second public IP -- Caddy (and SSH)
+# derper binds the first; Caddy binds the second. Caddy's side is set in its
+# Caddyfile (roles/caddy_gateway/files/Caddyfile, `default_bind` and the
+# layer4 listener), not here.
+derp_bind_ip: "117.18.125.44"
 
 # The gateway reaches homelab services over the tailnet, so accept the homelab
 # subnet routes on this node (overrides the relay role's default of false).
@@ -28,40 +30,19 @@ tailscale_accept_routes: true
 # non-expiring OAuth client secret also works as the key (OAuth needs the tag).
 tailscale_tags: "tag:gateway"
 
-# --- Caddy public sites ---
-caddy_email: "fordpatsakorn@gmail.com"
-# Each site: public hostname (A record -> caddy_bind_ip) -> an upstream the VPS
-# can reach over the tailnet. Use a tailnet 100.x IP, or a homelab LAN IP
-# (works because accept_routes is true above). accept-dns is off on this node,
-# so upstreams must be IPs, not MagicDNS names.
-#
-# Public apps live under *.app.fordkuppp.me (a wildcard DNSEndpoint in
-# kubernetes/apps/dns/records.yaml) and reach the cluster's Envoy gateway on
-# its LAN VIP via the homelab subnet route. Envoy terminates TLS for that
-# wildcard itself, so Caddy re-encrypts (`tls: true`) rather than sending
-# plain HTTP; adding an app is one entry here plus an HTTPRoute in the cluster.
-caddy_sites:
-  - host: share.app.fordkuppp.me
-    upstream: 192.168.1.3:443
-    tls: true
+# --- Public gateway ---
+# Sites and game servers are NOT listed here. They are the hand-written
+# roles/caddy_gateway/files/Caddyfile: add a Minecraft server as one
+# `import mc_server` line, a public app as one site block. The file explains
+# both. What the inventory still owns is the Caddy build and Anubis.
 
-# Bot challenge in front of every HTTP site above. Installed by the `anubis`
-# role (playbooks/anubis.yaml), which keys off this same switch.
-caddy_anubis_enabled: true
-
-# --- Minecraft servers ---
-# Not HTTP, so this needs the caddy-l4 module -- the role builds a custom Caddy
-# for it. Upstreams are wings-1's TAILNET address, not its LAN address: the VPS
-# reaches it peer-to-peer, keeping the cluster's subnet router out of the
-# player data path. The pelican_wings role prints the value to use.
-#
-# Every server shares 25565 and is told apart by the hostname in the client's
-# handshake, so a new one is just another entry here -- the *.games wildcard
-# already resolves it and the provider SG port is already open. The wildcard is
-# a DNSEndpoint in kubernetes/apps/dns/records.yaml, Cloudflare proxy off.
-caddy_minecraft_servers:
-  - hostname: mc.games.fordkuppp.me
-    upstream: "100.68.244.45:25565" # wings-1's tailnet address
+# Bot challenge in front of the HTTP sites. The Caddyfile's `import anubis`
+# lines assume this is on.
+anubis_enabled: true
+# Every hostname in the Caddyfile that imports anubis. Anubis refuses to
+# redirect a passed challenge anywhere else.
+anubis_redirect_domains:
+  - share.app.fordkuppp.me
 
 # --- Custom Caddy build (needs Go on the Ansible controller) ---
 # Renovate tracks both.
