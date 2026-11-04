@@ -58,3 +58,17 @@ Reaching `192.168.1.3`:
 Both resolvers return the same address, so a device's DNS choice (Android
 Private DNS, browser DoH, MagicDNS) no longer decides whether apps are
 reachable. See `docs/runbooks/dns-single-answer.md`.
+
+### Public hostnames
+
+Everything internet-facing resolves to the edge VPS, never to the LAN:
+
+| Record | Target | Carries |
+| --- | --- | --- |
+| `derp.fordkuppp.me` | `117.18.125.44` (first IP) | the DERP relay |
+| `*.games.fordkuppp.me` | `117.18.125.45` (second IP) | raw TCP via caddy-l4 |
+| `*.app.fordkuppp.me` | `117.18.125.45` (second IP) | HTTPS via Caddy, re-encrypted to `192.168.1.3` over the tailnet |
+
+All three are `DNSEndpoint`s in `kubernetes/apps/dns/records.yaml`, Cloudflare
+proxy off. A public HTTP app is an HTTPRoute on the gateway's `https-public`
+listener plus a `caddy_sites` entry; the wildcard already resolves it.

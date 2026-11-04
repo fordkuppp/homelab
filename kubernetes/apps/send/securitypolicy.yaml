@@ -1,0 +1,27 @@
+# Send has no accounts, so without this anyone on the internet could use the
+# disk as a free file host. Envoy runs the OIDC flow against Pocket ID in front
+# of the upload route only; the download route in httproute.yaml stays open.
+#
+# Pocket ID is reachable only on the LAN or tailnet, so the login page itself
+# needs that access -- which is exactly the set of people allowed to upload.
+# The redirect URL must match the client's callback in Pocket ID character for
+# character, and the path must be one the send-upload route carries.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: send-upload
+  namespace: send
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: send-upload
+  oidc:
+    provider:
+      issuer: https://id.local.fordkuppp.me
+    clientIDRef:
+      name: send-oidc
+    clientSecret:
+      name: send-oidc
+    redirectURL: https://share.app.fordkuppp.me/oauth2/callback
+    logoutPath: /logout
