@@ -8,8 +8,9 @@ composite (whole-machine) playbooks that chain them live in `playbooks/composite
 ## Provision the whole edge box
 
 `composite/edge.yaml` runs the full stack on the `edge` group in order --
-baseline hardening, the DERP relay, then the gateway (which no-ops until
-`caddy_sites`, `caddy_l4_routes` or `caddy_minecraft_servers` is set):
+baseline hardening, the DERP relay, the Anubis bot challenge (no-op unless
+`caddy_anubis_enabled`), then the gateway (which no-ops until `caddy_sites`,
+`caddy_l4_routes` or `caddy_minecraft_servers` is set):
 
 ```fish
 cd ansible
@@ -18,7 +19,7 @@ ansible-playbook playbooks/composite/edge.yaml \
 ```
 
 It uses `import_playbook`, so each concern (`baseline.yaml`, `tailscale-derp.yaml`,
-`caddy-gateway.yaml`) stays runnable on its own too.
+`anubis.yaml`, `caddy-gateway.yaml`) stays runnable on its own too.
 
 ## Provision the whole Wings VM
 
@@ -147,6 +148,38 @@ over the tailnet. Use a tailnet `100.x` IP or a homelab LAN IP -- the latter
 works because `tailscale_accept_routes: true` is set for this group. Upstreams
 must be IPs, not MagicDNS names (this node runs with accept-dns off).
 
+Apps in the cluster sit behind the Envoy gateway, which terminates TLS for
+`*.app.fordkuppp.me` itself. For those, set `tls: true` and point `upstream`
+at the gateway's LAN VIP on 443: Caddy re-encrypts with the site's hostname as
+SNI and checks the certificate against it. The `*.app.fordkuppp.me` wildcard
+(`kubernetes/apps/dns/records.yaml`) already resolves the name, so a new app
+is this entry plus an HTTPRoute on the gateway's `https-public` listener.
+
+```yaml
+caddy_sites:
+  - host: share.app.fordkuppp.me
+    upstream: 192.168.1.3:443
+    tls: true
+```
+
+Why re-encrypt rather than send plain HTTP over the (already encrypted)
+tailnet: Envoy's OIDC filter, which gates uploads on the Send app, wants to see
+HTTPS natively. A plain-HTTP listener would mean teaching Envoy to trust a
+forwarded-proto header from Caddy, which is a second trust boundary for no
+gain.
+
+#### Bot challenge: `caddy_anubis_enabled`
+
+With `caddy_anubis_enabled: true`, every site above runs through
+[Anubis](https://anubis.techaro.lol) before it is proxied, unless the entry
+says `anubis: false`. Anubis is installed by the [anubis](#anubis) role and
+runs in *subrequest* mode: Caddy's `forward_auth` asks it for a verdict on each
+request, a 401 bounces the visitor to a proof-of-work page served from the same
+hostname under `/.within.website/`, and a passed challenge sets a cookie good
+for a week. Caddy keeps doing all the proxying, so one Anubis covers every
+site. Raw TCP forwards and game servers are never challenged -- Anubis only
+speaks HTTP.
+
 ### 3. Forward raw TCP
 
 HTTP reverse-proxying is not enough for a game server: Minecraft speaks its own
@@ -243,6 +276,40 @@ the systemd drop-in restarts it instead.
 
 Reverse-proxy only. No host hardening, no auth/WAF in front of the proxied
 services -- add those per service as needed.
+
+## anubis
+
+[Anubis](https://anubis.techaro.lol) on the `edge` box, as the challenge in
+front of the public HTTP sites. Installed from upstream's `.deb`, which ships a
+template unit (`anubis@.service`) reading `/etc/anubis/<instance>.env`; the
+role renders that file and a bot policy as `anubis@caddy`. Pinned by
+`anubis_version` and Renovate-tracked.
+
+The playbook keys off `caddy_anubis_enabled`, the same switch that makes the
+Caddy role emit the `forward_auth` blocks, so the two cannot drift apart.
+Settings worth knowing:
+
+- Binds loopback only (`anubis_bind`, `anubis_metrics_bind`). The VPS has two
+  public IPs and upstream's default is every interface.
+- `TARGET=" "` -- a single space -- is Anubis's documented value for "there is
+  no upstream, I only answer the check endpoint".
+- The policy is upstream's default with `DENY` answering 403 instead of 200,
+  because in subrequest mode a 200 from the check endpoint means "allow". The
+  GeoIP/ASN rules are dropped (no Thoth database here).
+- `REDIRECT_DOMAINS` is derived from `caddy_sites`, closing the open redirect
+  Anubis warns about when it is unset.
+- The signing key is generated at start, so a restart invalidates every
+  visitor's pass cookie and they solve one more challenge. Harmless at this
+  scale; set `ED25519_PRIVATE_KEY_HEX` from a secret if that ever matters.
+
+```fish
+cd ansible
+ansible-playbook playbooks/anubis.yaml
+```
+
+Verify with `curl http://127.0.0.1:9090/metrics` on the box, and from outside
+by opening a site in a browser: the first visit shows the challenge page for a
+moment, then the app.
 
 ## docker
 

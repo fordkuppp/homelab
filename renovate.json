@@ -89,6 +89,19 @@
       ],
       "depNameTemplate": "mholt/caddy-l4",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Anubis: the bot-challenge .deb installed on the edge group",
+      "managerFilePatterns": [
+        "/^ansible/roles/anubis/defaults/main\\.yaml$/",
+        "/^ansible/inventory/group_vars/edge\\.yaml$/"
+      ],
+      "matchStrings": [
+        "anubis_version:\\s*\"?(?<currentValue>v[0-9][^\"\\s#]*)\"?"
+      ],
+      "depNameTemplate": "TecharoHQ/anubis",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [

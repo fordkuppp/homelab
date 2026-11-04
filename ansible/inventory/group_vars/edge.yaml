@@ -34,9 +34,20 @@ caddy_email: "fordpatsakorn@gmail.com"
 # can reach over the tailnet. Use a tailnet 100.x IP, or a homelab LAN IP
 # (works because accept_routes is true above). accept-dns is off on this node,
 # so upstreams must be IPs, not MagicDNS names.
-caddy_sites: [] # TODO
-#   - host: media.example.com
-#     upstream: 192.168.1.3:8096   # jellyfin, via the homelab subnet route
+#
+# Public apps live under *.app.fordkuppp.me (a wildcard DNSEndpoint in
+# kubernetes/apps/dns/records.yaml) and reach the cluster's Envoy gateway on
+# its LAN VIP via the homelab subnet route. Envoy terminates TLS for that
+# wildcard itself, so Caddy re-encrypts (`tls: true`) rather than sending
+# plain HTTP; adding an app is one entry here plus an HTTPRoute in the cluster.
+caddy_sites:
+  - host: share.app.fordkuppp.me
+    upstream: 192.168.1.3:443
+    tls: true
+
+# Bot challenge in front of every HTTP site above. Installed by the `anubis`
+# role (playbooks/anubis.yaml), which keys off this same switch.
+caddy_anubis_enabled: true
 
 # --- Minecraft servers ---
 # Not HTTP, so this needs the caddy-l4 module -- the role builds a custom Caddy
