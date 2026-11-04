@@ -1,18 +1,13 @@
 ---
-# Public reverse-proxy on the edge VPS's second IP. Terminates HTTPS for your
-# public hostnames and proxies to homelab services over the tailnet (the box is
-# already a tailnet node from the tailscale-derp role). Run tailscale-derp
-# FIRST so derper is rebound to the first IP, freeing the second IP's :443.
+# Public reverse-proxy on the edge VPS's second IP. Terminates HTTPS for the
+# public hostnames and forwards raw TCP for the game servers, both to homelab
+# upstreams over the tailnet (the box is already a tailnet node from the
+# tailscale-derp role). Run tailscale-derp FIRST so derper is rebound to the
+# first IP, freeing the second IP's :443.
+#
+# What it serves is the hand-written roles/caddy_gateway/files/Caddyfile.
 - name: Configure the public reverse-proxy gateway
   hosts: edge
   become: true
   roles:
-    # Guarded so composite/edge.yml can import this unconditionally; it no-ops
-    # until you define an HTTP site in caddy_sites, a raw-TCP forward in
-    # caddy_l4_routes, or a game server in caddy_minecraft_servers. Any one of
-    # them alone is legitimate -- game servers with no HTTP sites is the norm.
-    - role: caddy_gateway
-      when: >-
-        (caddy_sites | length > 0)
-        or (caddy_l4_routes | default([]) | length > 0)
-        or (caddy_minecraft_servers | default([]) | length > 0)
+    - caddy_gateway
