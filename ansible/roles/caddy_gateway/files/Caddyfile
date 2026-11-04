@@ -1,0 +1,101 @@
+# Public gateway on the edge VPS's second IP. Hand-written -- there is no
+# template. Ansible copies this file as-is, validates it with the caddy-l4
+# build, and reloads Caddy.
+#
+# Add a Minecraft server: one `import mc_server <label> <upstream>` line in the
+# 25565 listener. The *.games.fordkuppp.me wildcard already resolves
+# <label>.games.fordkuppp.me and 25565 is already open, so nothing else moves.
+#
+# Add a public HTTP app: one site block at the bottom, same shape as
+# share.app.fordkuppp.me, plus its hostname in anubis_redirect_domains
+# (inventory/group_vars/edge.yaml). The *.app.fordkuppp.me wildcard already
+# resolves it.
+
+# One Minecraft server: send the label the player typed to an upstream.
+# Minecraft has no Host header or SNI, but the client copies the typed
+# address into its handshake packet as plain text, so the matcher reads it off
+# the first bytes of the connection.
+#
+# The matcher reads exactly 28 bytes and reports no-match if fewer arrive. A
+# status ping sends only len(hostname)+10 bytes, which is >= 30 for any name
+# under the wildcard, so 28 never makes a ping hang. It leaves room for
+# labels up to 17 characters; a longer label silently hits the fallback.
+#
+# [^a-z0-9.-] pins the label to the byte before it, the hostname-length
+# field. For any label that fits in 28 bytes that byte is 20..36, never a
+# hostname character, so `mc` cannot match `xmc` and the anchor holds for
+# every protocol-varint width. A brace quantifier such as .{4,6} would NOT
+# work here: caddy-l4 runs the pattern through Caddy's placeholder replacer,
+# which strips anything in braces.
+(mc_server) {
+	@{args[0]} regexp (?i)[^a-z0-9.-]{args[0]}\.games 28
+	route @{args[0]} {
+		proxy {args[1]}
+	}
+}
+
+# Anubis in subrequest mode. forward_auth asks it for a verdict on every
+# request; a 401 means "challenge first", so the client is bounced to the
+# challenge page, which Caddy serves from this same host by proxying the
+# /.within.website/ prefix to Anubis. Anubis never sees the upstream -- that
+# stays Caddy's job -- so one instance covers every site. 127.0.0.1:8923 is
+# anubis_bind in the anubis role.
+(anubis) {
+	route {
+		reverse_proxy /.within.website/* 127.0.0.1:8923
+		forward_auth 127.0.0.1:8923 {
+			uri /.within.website/x/cmd/anubis/api/check
+			trusted_proxies private_ranges
+			@unauthorized status 401
+			handle_response @unauthorized {
+				redir * /.within.website/?redir={uri} 307
+			}
+		}
+	}
+}
+
+{
+	email fordpatsakorn@gmail.com
+	# Every listener (incl. the :80 ACME/redirect vhost) stays on the second
+	# public IP so Caddy never touches derper's :443 on the first one.
+	default_bind 117.18.125.45
+
+	# Raw TCP. default_bind does NOT apply to layer4 listeners, so the IP is
+	# explicit here -- otherwise this would listen on 0.0.0.0 and spill onto
+	# derper's IP.
+	layer4 {
+		# Every Minecraft server shares this listener and is told apart by the
+		# label the player typed. Upstreams are wings-1's TAILNET address, not
+		# its LAN address: the VPS reaches it peer-to-peer, keeping the
+		# cluster's subnet router out of the player data path.
+		117.18.125.45:25565 {
+			import mc_server mc 100.68.244.45:25565
+
+			# Matched nothing above: a raw-IP connect or an unknown name. The
+			# always-true 1-byte matcher is deliberate. A matcher-less route is
+			# reached only once every matcher above has returned a verdict,
+			# and one still waiting on bytes that never arrive (a 2-byte
+			# legacy ping) never does -- the connection would hang for
+			# matching_timeout and drop. To hide the server from port scanners
+			# instead, replace the proxy line with `close` (then the path can
+			# no longer be tested by IP).
+			@any regexp (?s). 1
+			route @any {
+				proxy 100.68.244.45:25565
+			}
+		}
+	}
+}
+
+# Public HTTP apps. Those in the cluster sit behind the Envoy gateway, which
+# terminates TLS for *.app.fordkuppp.me itself, so Caddy re-encrypts to the
+# gateway's LAN VIP with the site's hostname as SNI and checks the certificate
+# against it. The upstream is an IP, so the SNI has to be given explicitly.
+share.app.fordkuppp.me {
+	import anubis
+	reverse_proxy https://192.168.1.3:443 {
+		transport http {
+			tls_server_name share.app.fordkuppp.me
+		}
+	}
+}
