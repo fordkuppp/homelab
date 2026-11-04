@@ -9,8 +9,7 @@ composite (whole-machine) playbooks that chain them live in `playbooks/composite
 
 `composite/edge.yaml` runs the full stack on the `edge` group in order --
 baseline hardening, the DERP relay, the Anubis bot challenge (no-op unless
-`caddy_anubis_enabled`), then the gateway (which no-ops until `caddy_sites`,
-`caddy_l4_routes` or `caddy_minecraft_servers` is set):
+`anubis_enabled`), then the gateway:
 
 ```fish
 cd ansible
@@ -66,7 +65,8 @@ gateway can reach homelab services over the tailnet. That install is **not** in
 this role -- it lives in `tailscale_node`, which `tailscale_derp` pulls in as a
 meta dependency, so the Wings host can reuse it. The VPS has **two public
 IPs**: derper binds `:443` on the first (`derp_bind_ip`), Caddy binds `:443` on
-the second (`caddy_bind_ip`), so each keeps its own Let's Encrypt cert with no
+the second (set in the gateway's Caddyfile), so each keeps its own Let's
+Encrypt cert with no
 port collision. See [caddy-gateway](#caddy-gateway).
 
 ### 1. Get a tagged auth key
@@ -127,40 +127,40 @@ default-deny firewall). Handle baseline hardening separately.
 
 Public reverse-proxy on the `edge` VPS's **second** IP. Because the homelab is
 behind CGNAT, nothing at home is reachable from the internet directly; this is
-how a service gets a public hostname. Caddy terminates HTTPS on `caddy_bind_ip`
+how a service gets a public hostname. Caddy terminates HTTPS on the second IP
 and proxies to the homelab over the tailnet (the box is already a tailnet node
 from `tailscale-derp`). Private, tailnet-only services like jellyfin do **not**
-belong here -- reach those straight over Tailscale; only put internet-facing
-hostnames in `caddy_sites`.
+belong here -- reach those straight over Tailscale.
+
+**The config is a hand-written Caddyfile**, `roles/caddy_gateway/files/Caddyfile`.
+There is no template and no list of sites in the inventory: the file is the
+source of truth, and the role copies it, validates it with the caddy-l4 build,
+and reloads Caddy. The file's own comments explain each block; this section
+covers what is not obvious from the Caddyfile alone.
 
 ### 1. Second IP + the relay rebind
 
-This role assumes the VPS has two public IPs. Set `derp_bind_ip` (first IP) and
-`caddy_bind_ip` (second IP) in `inventory/group_vars/edge.yaml`. **Re-run
+This role assumes the VPS has two public IPs. derper binds the first
+(`derp_bind_ip` in `inventory/group_vars/edge.yaml`); Caddy binds the second,
+set in the Caddyfile as `default_bind` and on the layer4 listener. **Re-run
 `tailscale-derp` first** so derper rebinds from "all interfaces" to the first
 IP -- otherwise it still holds `:443` on the second IP and Caddy can't bind it.
 
-### 2. Define the sites
+### 2. Public HTTP apps
 
-Fill `caddy_sites` in `group_vars/edge.yaml`: each entry is a public `host`
-(create an `A` record -> `caddy_bind_ip`) and an `upstream` the VPS can reach
-over the tailnet. Use a tailnet `100.x` IP or a homelab LAN IP -- the latter
-works because `tailscale_accept_routes: true` is set for this group. Upstreams
-must be IPs, not MagicDNS names (this node runs with accept-dns off).
+One site block per hostname. Upstreams must be IPs the VPS can reach over the
+tailnet -- a tailnet `100.x` IP, or a homelab LAN IP (works because
+`tailscale_accept_routes: true` is set for this group) -- not MagicDNS names,
+because this node runs with accept-dns off.
 
 Apps in the cluster sit behind the Envoy gateway, which terminates TLS for
-`*.app.fordkuppp.me` itself. For those, set `tls: true` and point `upstream`
-at the gateway's LAN VIP on 443: Caddy re-encrypts with the site's hostname as
+`*.app.fordkuppp.me` itself. For those, proxy to `https://192.168.1.3:443`
+with `tls_server_name` set to the site's hostname: Caddy re-encrypts with that
 SNI and checks the certificate against it. The `*.app.fordkuppp.me` wildcard
-(`kubernetes/apps/dns/records.yaml`) already resolves the name, so a new app
-is this entry plus an HTTPRoute on the gateway's `https-public` listener.
-
-```yaml
-caddy_sites:
-  - host: share.app.fordkuppp.me
-    upstream: 192.168.1.3:443
-    tls: true
-```
+(`kubernetes/apps/dns/records.yaml`) already resolves the name, so a new app is
+the site block, the hostname in `anubis_redirect_domains`, and an HTTPRoute on
+the gateway's `https-public` listener. `share.app.fordkuppp.me` in the file is
+the pattern to copy.
 
 Why re-encrypt rather than send plain HTTP over the (already encrypted)
 tailnet: Envoy's OIDC filter, which gates uploads on the Send app, wants to see
@@ -168,87 +168,80 @@ HTTPS natively. A plain-HTTP listener would mean teaching Envoy to trust a
 forwarded-proto header from Caddy, which is a second trust boundary for no
 gain.
 
-#### Bot challenge: `caddy_anubis_enabled`
+#### Bot challenge
 
-With `caddy_anubis_enabled: true`, every site above runs through
-[Anubis](https://anubis.techaro.lol) before it is proxied, unless the entry
-says `anubis: false`. Anubis is installed by the [anubis](#anubis) role and
-runs in *subrequest* mode: Caddy's `forward_auth` asks it for a verdict on each
-request, a 401 bounces the visitor to a proof-of-work page served from the same
-hostname under `/.within.website/`, and a passed challenge sets a cookie good
-for a week. Caddy keeps doing all the proxying, so one Anubis covers every
-site. Raw TCP forwards and game servers are never challenged -- Anubis only
-speaks HTTP.
+Every site block that says `import anubis` runs through
+[Anubis](https://anubis.techaro.lol) before it is proxied. Anubis is installed
+by the [anubis](#anubis) role (`anubis_enabled`) and runs in *subrequest* mode:
+Caddy's `forward_auth` asks it for a verdict on each request, a 401 bounces the
+visitor to a proof-of-work page served from the same hostname under
+`/.within.website/`, and a passed challenge sets a cookie good for a week. Caddy
+keeps doing all the proxying, so one Anubis covers every site. Leave the
+`import anubis` line out of a site to skip the challenge for it. Game servers
+are raw TCP and are never challenged -- Anubis only speaks HTTP.
 
-### 3. Forward raw TCP
+### 3. Minecraft servers
 
-HTTP reverse-proxying is not enough for a game server: Minecraft speaks its own
-protocol on `25565/tcp`. Upstream Caddy has no layer-4 proxy, so the role builds
-Caddy **from source on the controller** with
+Minecraft speaks its own protocol on `25565/tcp`, and upstream Caddy has no
+layer-4 proxy, so the role builds Caddy **from source on the controller** with
 [`caddy-l4`](https://github.com/mholt/caddy-l4) compiled in -- the same
 build-locally-ship-the-binary approach as `derper`, and the same **Go must be
 installed locally** requirement. `caddy_version` and `caddy_l4_version` are
 pinned and Renovate-tracked; the built artifact is version-stamped, so a repeat
 run at the same versions skips the compile entirely.
 
-Layer-4 listeners do not inherit `default_bind`, so the role writes
-`{{ caddy_bind_ip }}:<port>` explicitly -- without that, Caddy would also claim
-the port on derper's IP.
+Every game server shares the one `25565` listener and is told apart by the
+hostname the player typed. HTTP can route by hostname because it carries one
+in the `Host` header or the TLS SNI; Minecraft has neither, but the client
+copies the typed address into its handshake packet as plain text, so caddy-l4's
+`regexp` matcher reads it off the first bytes of the connection. The Caddyfile
+packages that as a snippet, so **adding a server is one line** inside the
+listener:
 
-#### Minecraft servers share one port: `caddy_minecraft_servers`
-
-`caddy_sites` routes HTTP by hostname because HTTP puts the hostname in the
-`Host` header and HTTPS in the TLS SNI. Minecraft has neither. It is still
-routable by hostname because the client copies the address the player typed
-into its handshake packet as plain UTF-8, which caddy-l4's `regexp` matcher
-reads out of the first bytes of the connection.
-
-```yaml
-caddy_minecraft_servers:
-  - hostname: mc.games.fordkuppp.me
-    upstream: "100.x.y.z:25565" # the Wings host's tailnet address
+```caddyfile
+import mc_server survival 100.68.244.45:25566
 ```
 
-Every server shares `caddy_minecraft_port` (25565), so **adding one is this
-entry and nothing else** -- the `*.games.fordkuppp.me` wildcard
-(`kubernetes/apps/dns/records.yaml`) already resolves the name, and the
-provider firewall port is already open.
+Players connect to `survival.games.fordkuppp.me`. The `*.games.fordkuppp.me`
+wildcard (`kubernetes/apps/dns/records.yaml`) already resolves it and the
+provider firewall port is already open, so nothing else changes. Upstreams are
+the Wings host's **tailnet** address (the `pelican-wings` play prints it), so
+the VPS reaches it peer-to-peer and the cluster's subnet router stays out of
+the player data path. Labels are limited to 17 characters; the Caddyfile
+comment on the snippet explains the byte arithmetic and why the matcher is
+shaped the way it is.
 
-`caddy_minecraft_fallback` decides what happens to a connection matching no
-hostname -- a raw-IP connect, or an unknown name. `first` (the default) sends
-it to the first entry; `close` drops it, hiding the server from port scanners
-at the cost of being unable to test the path by IP.
-
-Two details of the matcher are load-bearing and are why the template, not you,
-computes its byte count. It reads *exactly* N bytes and reports no-match if
-fewer arrive, and a status ping sends only a little more than the hostname
-itself, so the only workable counts are `len(hostname)+5 .. +10`; the template
-uses `+7`. A shared constant cannot work, because two hostnames of different
-lengths have disjoint windows. For the same reason the catch-all route carries
-an always-true matcher rather than no matcher at all: a matcher-less route is
-reached only after every matcher above returns a verdict, and one still waiting
-on bytes that will never arrive never does -- the connection would hang for
-`matching_timeout` and be dropped instead of falling through.
-
-#### Other raw TCP: `caddy_l4_routes`
-
-For non-Minecraft protocols, which have no hostname to match on. One port per
-upstream:
-
-```yaml
-caddy_l4_routes:
-  - listen_port: 27015
-    upstream: "100.x.y.z:27015"
-```
-
-Each entry needs its own port opened in the provider firewall, which is exactly
-the per-server toil `caddy_minecraft_servers` avoids.
+A connection that matches no label -- a raw-IP connect, or an unknown name --
+hits the fallback route at the bottom of the listener, which proxies to the
+first server. Swap its `proxy` line for `close` to drop those instead, which
+hides the server from port scanners at the cost of being unable to test the
+path by IP.
 
 There is no PROXY protocol here: Fabric and Forge cannot read it, so the server
 sees every player arriving from the gateway's IP. **Ban by UUID, not by IP** --
 an IP ban bans everyone.
 
-### 4. Run it
+Layer-4 listeners do not inherit `default_bind`, which is why the listener
+address spells out the IP -- without that, Caddy would also claim the port on
+derper's IP.
+
+### 4. Check it before you ship it
+
+Two checks run on the controller against the same caddy-l4 build the role
+ships, so a mistake is caught before anything touches the VPS:
+
+```fish
+# Parses, and shows the matchers caddy will actually run
+/tmp/caddy-v2.11.7-l4-v0.1.2 adapt --config ansible/roles/caddy_gateway/files/Caddyfile --adapter caddyfile
+
+# Routes hand-built handshakes to the right upstream (no Minecraft client needed)
+python3 ansible/roles/caddy_gateway/tests/mc_routing.py /tmp/caddy-v2.11.7-l4-v0.1.2
+```
+
+The build artifact is created by the first play run; the adapt check is also
+what the role's `validate:` does on the VPS before it installs the file.
+
+### 5. Run it
 
 ```fish
 cd ansible
@@ -261,16 +254,17 @@ the systemd drop-in restarts it instead.
 
 ### Afterwards
 
-- **Open `443/tcp` and `80/tcp` (ACME) on `caddy_bind_ip`** in the provider's
-  cloud firewall -- same separate-layer caveat as the other playbooks. Open
-  `25565/tcp` once for `caddy_minecraft_servers` (all of them share it), plus a
-  port per `caddy_l4_routes` entry. The play's final task lists them.
+- **Open `443/tcp`, `80/tcp` (ACME) and `25565/tcp` on the second IP** in the
+  provider's cloud firewall -- same separate-layer caveat as the other
+  playbooks. All game servers share `25565`, so this is a one-time step.
 - Caddy fetches a Let's Encrypt cert per site automatically on first request.
-  Layer-4 routes are pass-through and get no cert.
-- **Layer-4 hostnames need the Cloudflare proxy off** (grey cloud). The proxy
-  carries HTTP only; raw TCP through it is dropped.
-- Keep private services off the public IP: anything in `caddy_sites`,
-  `caddy_l4_routes` or `caddy_minecraft_servers` is exposed to the internet.
+  Layer-4 listeners are pass-through and get no cert.
+- **Game hostnames need the Cloudflare proxy off** (grey cloud). The proxy
+  carries HTTP only; raw TCP through it is dropped. The `*.games` and `*.app`
+  wildcards are already grey-clouded.
+- Keep private services off the public IP: anything in the Caddyfile is
+  exposed to the internet.
+
 
 ### Scope
 
@@ -285,9 +279,10 @@ template unit (`anubis@.service`) reading `/etc/anubis/<instance>.env`; the
 role renders that file and a bot policy as `anubis@caddy`. Pinned by
 `anubis_version` and Renovate-tracked.
 
-The playbook keys off `caddy_anubis_enabled`, the same switch that makes the
-Caddy role emit the `forward_auth` blocks, so the two cannot drift apart.
-Settings worth knowing:
+The playbook keys off `anubis_enabled`. The Caddyfile's `import anubis` lines
+assume it is on -- with Anubis absent they would `forward_auth` to a closed port
+and every request would 502 -- so turn both off together. Settings worth
+knowing:
 
 - Binds loopback only (`anubis_bind`, `anubis_metrics_bind`). The VPS has two
   public IPs and upstream's default is every interface.
@@ -296,8 +291,9 @@ Settings worth knowing:
 - The policy is upstream's default with `DENY` answering 403 instead of 200,
   because in subrequest mode a 200 from the check endpoint means "allow". The
   GeoIP/ASN rules are dropped (no Thoth database here).
-- `REDIRECT_DOMAINS` is derived from `caddy_sites`, closing the open redirect
-  Anubis warns about when it is unset.
+- `REDIRECT_DOMAINS` is `anubis_redirect_domains` in `group_vars/edge.yaml`:
+  every hostname whose site block imports the anubis snippet. Unset, Anubis
+  warns about an open redirect.
 - The signing key is generated at start, so a restart invalidates every
   visitor's pass cookie and they solve one more challenge. Harmless at this
   scale; set `ED25519_PRIVATE_KEY_HEX` from a secret if that ever matters.
@@ -381,8 +377,8 @@ ansible-playbook playbooks/pelican-wings.yaml \
 
 The role asserts the three credentials are non-empty before touching the host,
 so a forgotten `-e` fails immediately rather than installing a daemon that
-cannot authenticate. The closing task prints the tailnet address to put in
-`caddy_minecraft_servers`.
+cannot authenticate. The closing task prints the tailnet address and the
+`import mc_server` line to add to the gateway's Caddyfile.
 
 ### Why it is configured the way it is
 
@@ -411,8 +407,8 @@ cannot authenticate. The closing task prints the tailnet address to put in
 - Create the server (a Fabric or Forge egg, allocated `192.168.1.30:25565`) and
   **connect from the LAN first**. That isolates the server itself from the
   public path before you add a second variable.
-- Only then expose it: add the printed tailnet address to
-  `caddy_minecraft_servers` under a `*.games.fordkuppp.me` name and follow
+- Only then expose it: add an `import mc_server <label> <tailnet-ip>:25565`
+  line to `roles/caddy_gateway/files/Caddyfile` and follow
   [caddy-gateway](#caddy-gateway). The wildcard record already resolves it and
   25565 is already open, so no DNS or firewall change is needed per server.
 

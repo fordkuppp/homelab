@@ -90,8 +90,11 @@ Three changes, no new patterns:
 1. An HTTPRoute with hostname `<name>.app.fordkuppp.me` -- it attaches to the
    `https-public` listener by hostname. Add a `SecurityPolicy` if it needs a
    login.
-2. A `caddy_sites` entry in `ansible/inventory/group_vars/edge.yaml` with
-   `upstream: 192.168.1.3:443` and `tls: true`, then
-   `ansible-playbook playbooks/caddy-gateway.yaml`. Anubis covers it
-   automatically; add `anubis: false` to opt out.
+2. A site block in `ansible/roles/caddy_gateway/files/Caddyfile` -- copy the
+   `share.app.fordkuppp.me` block and change the hostname in both places --
+   plus the hostname in `anubis_redirect_domains` in
+   `ansible/inventory/group_vars/edge.yaml`, then
+   `ansible-playbook playbooks/caddy-gateway.yaml` and
+   `ansible-playbook playbooks/anubis.yaml`. Leave out the `import anubis`
+   line to skip the bot challenge for that app.
 3. Nothing for DNS: the `*.app.fordkuppp.me` wildcard already resolves it.
