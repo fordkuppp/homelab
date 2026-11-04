@@ -1,0 +1,9 @@
+---
+# Ships the edge box's metrics and logs to the cluster's OpenTelemetry
+# Collector over the tailnet. What is collected is the hand-written
+# roles/otel_collector/files/config.yaml.
+- name: Install the OpenTelemetry Collector
+  hosts: edge
+  become: true
+  roles:
+    - otel_collector

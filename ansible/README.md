@@ -9,7 +9,7 @@ composite (whole-machine) playbooks that chain them live in `playbooks/composite
 
 `composite/edge.yaml` runs the full stack on the `edge` group in order --
 baseline hardening, the DERP relay, the Anubis bot challenge (no-op unless
-`anubis_enabled`), then the gateway:
+`anubis_enabled`), the gateway, then the telemetry agent:
 
 ```fish
 cd ansible
@@ -18,7 +18,8 @@ ansible-playbook playbooks/composite/edge.yaml \
 ```
 
 It uses `import_playbook`, so each concern (`baseline.yaml`, `tailscale-derp.yaml`,
-`anubis.yaml`, `caddy-gateway.yaml`) stays runnable on its own too.
+`anubis.yaml`, `caddy-gateway.yaml`, `otel-collector.yaml`) stays runnable on
+its own too.
 
 ## Provision the whole Wings VM
 
@@ -306,6 +307,57 @@ ansible-playbook playbooks/anubis.yaml
 Verify with `curl http://127.0.0.1:9090/metrics` on the box, and from outside
 by opening a site in a browser: the first visit shows the challenge page for a
 moment, then the app.
+
+## otel-collector
+
+The OpenTelemetry Collector (contrib build) on the `edge` box, shipping its
+metrics and logs to the cluster's collector at `otel-http.local.fordkuppp.me`
+over the tailnet. That collector already writes metrics to Prometheus and logs
+to Loki, so the VPS shows up next to the cluster with no cluster-side change.
+
+What it collects is the hand-written `roles/otel_collector/files/config.yaml`;
+the role installs upstream's pinned `.deb` (`otelcol_version`,
+Renovate-tracked), copies the file, and validates it with the installed binary
+before restarting. A bad edit never replaces a working config.
+
+| Source | Receiver | Lands as |
+|---|---|---|
+| Caddy, per site (`metrics { per_host }` in the Caddyfile) | `prometheus`, `localhost:2019` | `job="caddy"` |
+| Anubis | `prometheus`, `127.0.0.1:9090` | `job="anubis"` |
+| CPU, memory, load, disk, filesystem, network | `hostmetrics` | `job="edge-host"` |
+| caddy, anubis@caddy, derper, tailscaled, fail2ban, ssh | `journald` | Loki, `service_name` = the unit |
+
+All metrics carry `instance="derp-bkk-01"`.
+
+Things that are not obvious from the config:
+
+- **No Fluent Bit.** The `journald` receiver reads the journal by running
+  `journalctl`, which is why this is a native install rather than a container,
+  and why the role adds the service user to `systemd-journal`.
+- **The config goes in before the package.** Upstream's `.deb` starts the
+  service at install time with a sample config that listens for OTLP, pprof,
+  zpages, Jaeger and Zipkin on `0.0.0.0` -- the public IPs here. The role
+  creates the user and writes the real config first, and dpkg keeps it, so
+  that sample never runs.
+- **The journal directory is set explicitly.** The receiver defaults to the
+  volatile `/run/log/journal`; Ubuntu's persistent journal is
+  `/var/log/journal`.
+- **The journal cursor is persisted** under `/var/lib/otelcol-contrib`, so a
+  restart neither drops nor re-sends lines.
+- **A 150 MiB memory limit.** The VPS has under 1 GB and the collector should
+  shed data before it competes with Caddy or derper.
+- **No traces.** Caddy can emit OTLP traces, but the cluster collector has no
+  traces pipeline or backend yet.
+
+```fish
+cd ansible
+ansible-playbook playbooks/otel-collector.yaml
+```
+
+Verify with `systemctl status otelcol-contrib` and
+`journalctl -u otelcol-contrib -n 20` on the box (look for export errors), then
+in Grafana: `up{instance="derp-bkk-01"}` in Prometheus, and
+`{service_name="caddy"}` in Loki.
 
 ## docker
 

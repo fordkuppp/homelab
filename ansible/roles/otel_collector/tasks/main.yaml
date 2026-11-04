@@ -1,0 +1,85 @@
+---
+# Upstream's .deb ships the binary, a unit that runs as `otelcol-contrib` and
+# reads /etc/otelcol-contrib/config.yaml, and a sample config -- which its
+# postinst starts immediately. That sample binds OTLP, pprof, zpages, Jaeger
+# and Zipkin on 0.0.0.0, i.e. this box's public IPs. So the user and the real
+# config are put in place BEFORE the package: dpkg then keeps the existing
+# conffile (the apt module passes --force-confold), and the first start already
+# runs this config.
+
+# Same name and shape the package's preinst would create; it skips creation
+# when the user exists. In systemd-journal because the journald receiver runs
+# journalctl as this user, which otherwise sees only its own entries.
+- name: Create the collector service user
+  ansible.builtin.user:
+    name: otelcol-contrib
+    system: true
+    create_home: false
+    shell: /sbin/nologin
+    groups: [systemd-journal]
+    append: true
+  notify: Restart otelcol-contrib
+
+- name: Create the config and cursor directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: otelcol-contrib
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /etc/otelcol-contrib, owner: root, mode: "0755" }
+    - { path: /var/lib/otelcol-contrib, owner: otelcol-contrib, mode: "0750" }
+    - { path: /var/lib/otelcol-contrib/journald, owner: otelcol-contrib, mode: "0750" }
+
+- name: Check whether the collector is already installed
+  ansible.builtin.stat:
+    path: /usr/bin/otelcol-contrib
+  register: otelcol_binary
+
+# Validated with the installed binary whenever there is one. On the very first
+# run there is not, so the config goes in unvalidated; a broken one then fails
+# to start (closed), never falls back to the sample.
+- name: Install the collector config
+  ansible.builtin.copy:
+    src: config.yaml
+    dest: /etc/otelcol-contrib/config.yaml
+    owner: root
+    group: otelcol-contrib
+    mode: "0640"
+    validate: "{{ '/usr/bin/otelcol-contrib validate --config=%s' if otelcol_binary.stat.exists else omit }}"
+  notify: Restart otelcol-contrib
+
+# The download is version-stamped, so a rerun at the same version is a no-op
+# and a bump replaces the package in place.
+- name: Create the package cache directory
+  ansible.builtin.file:
+    path: "{{ otelcol_deb_cache | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download the collector package
+  ansible.builtin.get_url:
+    url: "{{ otelcol_deb_url }}"
+    dest: "{{ otelcol_deb_cache }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the collector package
+  ansible.builtin.apt:
+    deb: "{{ otelcol_deb_cache }}"
+  notify: Restart otelcol-contrib
+
+- name: Validate the collector config with the installed binary
+  ansible.builtin.command:
+    cmd: /usr/bin/otelcol-contrib validate --config=/etc/otelcol-contrib/config.yaml
+  changed_when: false
+
+- name: Enable and start the collector
+  ansible.builtin.systemd:
+    name: otelcol-contrib
+    enabled: true
+    state: started
