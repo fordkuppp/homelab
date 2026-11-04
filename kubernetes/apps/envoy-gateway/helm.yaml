@@ -28,3 +28,8 @@ spec:
   values:
     crds:
       enabled: true
+    # Backend resources are the only way to pin upstream ALPN per backend
+    config:
+      envoyGateway:
+        extensionApis:
+          enableBackend: true
