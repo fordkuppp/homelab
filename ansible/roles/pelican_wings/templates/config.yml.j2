@@ -1,8 +1,14 @@
-{{ ansible_managed | comment }}
+{#
+  The settings this role owns -- NOT the whole file. Wings writes its complete
+  config (every default filled in) back to disk at boot, so the role merges
+  these keys into whatever is there and writes only when a value differs.
+  Anything not listed here stays as Wings wrote it. Credentials go through
+  to_json so they always parse back as strings.
+#}
 debug: false
-uuid: {{ pelican_node_uuid }}
-token_id: {{ pelican_node_token_id }}
-token: {{ pelican_node_token }}
+uuid: {{ pelican_node_uuid | to_json }}
+token_id: {{ pelican_node_token_id | to_json }}
+token: {{ pelican_node_token | to_json }}
 
 api:
   host: 0.0.0.0
