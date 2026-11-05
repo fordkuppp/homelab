@@ -1,10 +1,10 @@
 ---
 all:
   children:
-    # Bangkok VPS, public IP. Runs a custom Tailscale DERP relay so private
-    # tailnet access (jellyfin etc.) stays fast under home CGNAT instead of
-    # hair-pinning through the Singapore public DERP. Caddy public ingress is
-    # deferred until the provider can offer a second IP.
+    # Bangkok VPS, two public IPs. The first runs a custom Tailscale DERP relay
+    # so private tailnet access (jellyfin etc.) stays fast under home CGNAT
+    # instead of hair-pinning through the Singapore public DERP; the second
+    # runs the Caddy public gateway (HTTPS sites + Minecraft).
     edge:
       hosts:
         derp-bkk-01:

@@ -2,52 +2,81 @@
 
 Configuration layer for hosts that are not managed by Flux. Layout follows
 [`docs/structure.md`](../docs/structure.md): inventory, roles and playbooks all live
-here. Per-concern playbooks sit at `playbooks/`;
-composite (whole-machine) playbooks that chain them live in `playbooks/composite/`.
+here. One playbook per concern sits in `playbooks/`, and `playbooks/site.yaml`
+imports them all in dependency order.
 
-## Provision the whole edge box
+Each play names its own target group, so a playbook cannot land on the wrong
+box. Narrow a run with `--limit <host>`, and preview it with `--list-hosts` or
+`--check --diff`. A play with no hosts left after the limit is skipped
+entirely, its fail-fast checks included.
 
-`composite/edge.yaml` runs the full stack on the `edge` group in order --
-baseline hardening, the DERP relay, the Anubis bot challenge (no-op unless
-`anubis_enabled`), the gateway, then the telemetry agent:
+`mise.toml` sets `ANSIBLE_CONFIG`, so the commands below work from anywhere in
+the repo.
+
+## Secrets
+
+Nothing secret is passed on the command line or committed. Each one is a
+`community.general.bitwarden_secrets_manager` lookup in
+`inventory/group_vars/`, keyed by the Bitwarden secret's ID (an ID is not a
+secret), and authenticated by `BWS_ACCESS_TOKEN`, which mise loads from `.env`.
+Bitwarden stays the only copy, the same as for the cluster's ExternalSecrets.
+
+| Variable | Bitwarden secret | Group |
+|---|---|---|
+| `tailscale_authkey` | `ts_derp_authkey` | edge |
+| `tailscale_authkey` | `ts_games_authkey` | games |
+| `pelican_node_uuid`, `pelican_node_token_id`, `pelican_node_token` | same names | games |
+
+A lookup runs only when its variable is used. The Tailscale key is read only
+when a box is not on the tailnet yet, so an expired or spent one-shot key does
+not break re-runs. The Wings credentials are read on every run that includes
+`pelican-wings.yaml`, because they are templated into its config. Rotating a
+secret is a Bitwarden edit; replacing one with a new Bitwarden entry means
+changing its ID in group_vars.
+
+A lookup failure (missing token, Bitwarden unreachable) fails the task that
+uses the variable, naming the plugin.
+
+## Provision a whole box
+
+`site.yaml` runs everything; `--limit` picks the machine. Each inventory group
+has two mise tasks wrapping `site.yaml` with that group's limit -- one that
+applies, and a dry run (`--check --diff`) that only reports:
 
 ```fish
-cd ansible
-ansible-playbook playbooks/composite/edge.yaml \
-  -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
+mise run ansible:edge:dry-run
+mise run ansible:edge
+mise run ansible:games:dry-run
+mise run ansible:games
 ```
 
-It uses `import_playbook`, so each concern (`baseline.yaml`, `tailscale-derp.yaml`,
-`anubis.yaml`, `caddy-gateway.yaml`, `otel-collector.yaml`) stays runnable on
-its own too.
+Extra arguments pass through, so `mise run ansible:games --limit wings-1`
+narrows to one host of a group. A new group gets its own pair of tasks in
+`mise.toml`.
 
-## Provision the whole Wings VM
+A dry run can't fully predict tasks that build or download (the derper and
+Caddy builds, package installs), so treat it as a preview, not a guarantee.
 
-`composite/wings.yaml` runs the same shape on the `games` group -- baseline
-hardening, then tailscaled, then Wings, then the
-[otel-collector](#otel-collector):
+On the edge box that is baseline hardening, the DERP relay, the Anubis bot
+challenge (no-op unless `anubis_enabled`), the gateway, then the telemetry
+agent. On the Wings VM it is baseline hardening, then tailscaled, then Wings
+(which brings Docker), then the [otel-collector](#otel-collector).
 
-```fish
-cd ansible
-ansible-playbook playbooks/composite/wings.yaml \
-  -e "tailscale_authkey=$(bws secret get $BWS_TS_GAMES_AUTHKEY_ID | jq -r .value)" \
-  -e "pelican_node_uuid=$(bws secret get $BWS_PELICAN_NODE_UUID_ID | jq -r .value)" \
-  -e "pelican_node_token_id=$(bws secret get $BWS_PELICAN_NODE_TOKEN_ID_ID | jq -r .value)" \
-  -e "pelican_node_token=$(bws secret get $BWS_PELICAN_NODE_TOKEN_ID | jq -r .value)"
-```
+The Wings node credentials come from the Panel and must exist first -- the
+Panel generates them when you create the Node, and there is no API to bootstrap
+them. See [pelican-wings](#pelican-wings) for how to get them, and
+`docs/ip-plan.md` for why the VM takes `192.168.1.30`.
 
-The node credentials come from the Panel and must exist first -- the Panel
-generates them when you create the Node, and there is no API to bootstrap them.
-See [pelican-wings](#pelican-wings) for how to get them, and `docs/ip-plan.md`
-for why the VM takes `192.168.1.30`.
+If a play fails on one box during a run without `--limit`, Ansible drops that
+host and carries on with the other.
 
 ## baseline
 
 Key-only SSH (`PasswordAuthentication no`, root `prohibit-password`),
 conffile-safe unattended security upgrades (`--force-confdef --force-confold`
 on all apt ops, so an upgrade can't wedge dpkg the way the cloud-init prompt
-did during provisioning), and a fail2ban sshd jail. For the internet-facing
-`edge` box. SSH stays on **public `:22`, key-only** by default -- flip the
+did during provisioning), and a fail2ban sshd jail. Run on its own it covers
+both boxes; `--limit derp-bkk-01` or `--limit wings-1` narrows it. SSH stays on **public `:22`, key-only** by default -- flip the
 `baseline_*` vars to change password/root policy or drop fail2ban, and restrict
 `:22` to the tailnet via the provider firewall if you want tailnet-only access.
 
@@ -75,8 +104,9 @@ port collision. See [caddy-gateway](#caddy-gateway).
 
 Create a **tagged** pre-auth key in the Tailscale admin console (reusable or
 one-shot), store it in Bitwarden Secrets Manager, and declare its tag's
-`tagOwners` in your tailnet policy. The private half is passed at run time and
-never committed.
+`tagOwners` in your tailnet policy. The edge group's `tailscale_authkey`
+lookup reads the secret `ts_derp_authkey`; a new Bitwarden entry means updating
+the ID there (see [Secrets](#secrets)).
 
 If the tailnet has **device approval** enabled, tick **Pre-approved** on the
 key. Without it the node authenticates but parks in `NeedsMachineAuth` until an
@@ -100,9 +130,7 @@ heavy compile off the tiny box. That means **Go must be installed locally**
 ### 3. Run it
 
 ```fish
-cd ansible
-ansible-playbook playbooks/tailscale-derp.yaml \
-  -e "tailscale_authkey=$(bws secret get $BWS_TS_DERP_AUTHKEY_ID | jq -r .value)"
+ansible-playbook ansible/playbooks/tailscale-derp.yaml
 ```
 
 The final task prints the DNS record, the ports to open, and the `derpMap`
@@ -122,8 +150,9 @@ block to paste into your tailnet policy.
 
 ### Scope
 
-Relay only. It does not harden the host (no SSH hardening, no fail2ban, no
-default-deny firewall). Handle baseline hardening separately.
+Relay only. Host hardening (SSH, fail2ban) is the [baseline](#baseline) role,
+which `site.yaml` runs first. There is no default-deny host firewall;
+the provider's cloud firewall is the only port filter.
 
 ## caddy-gateway
 
@@ -390,7 +419,7 @@ Things that are not obvious from the config:
 ```fish
 cd ansible
 ansible-playbook playbooks/otel-collector.yaml            # both boxes
-ansible-playbook playbooks/otel-collector.yaml -e otelcol_hosts=games  # one group
+ansible-playbook playbooks/otel-collector.yaml --limit wings-1        # one box
 ```
 
 Verify with `systemctl status otelcol-contrib` and
@@ -447,33 +476,37 @@ so this order is not negotiable:
    SSL is on even though Wings serves plain HTTP; see
    [Why it is configured the way it is](#why-it-is-configured-the-way-it-is).
 
-4. The Panel then shows a `uuid`, a `token_id` and a `token`. Store all three in
-   Bitwarden and export their ids as `BWS_PELICAN_NODE_UUID_ID`,
-   `BWS_PELICAN_NODE_TOKEN_ID_ID` and `BWS_PELICAN_NODE_TOKEN_ID`.
+4. The Panel then shows a `uuid`, a `token_id` and a `token`. Store them in
+   Bitwarden as `pelican_node_uuid`, `pelican_node_token_id` and
+   `pelican_node_token`. Updating the existing entries keeps their IDs; new
+   entries mean updating the IDs in `inventory/group_vars/games.yaml`.
 
-The tailnet auth key is separate: create a **tagged** pre-auth key for
-`tag:games` (declare the tag in `tagOwners` first) and export its id as
-`BWS_TS_GAMES_AUTHKEY_ID`. Tick **Pre-approved** if device approval is on --
-see [Get a tagged auth key](#1-get-a-tagged-auth-key).
+The tailnet auth key is separate: a **tagged** pre-auth key for `tag:games`
+(declare the tag in `tagOwners` first), stored as `ts_games_authkey`. Tick
+**Pre-approved** if device approval is on -- see
+[Get a tagged auth key](#1-get-a-tagged-auth-key).
 
 ### 2. Run it
 
 ```fish
-cd ansible
-ansible-playbook playbooks/pelican-wings.yaml \
-  -e "tailscale_authkey=$(bws secret get $BWS_TS_GAMES_AUTHKEY_ID | jq -r .value)" \
-  -e "pelican_node_uuid=$(bws secret get $BWS_PELICAN_NODE_UUID_ID | jq -r .value)" \
-  -e "pelican_node_token_id=$(bws secret get $BWS_PELICAN_NODE_TOKEN_ID_ID | jq -r .value)" \
-  -e "pelican_node_token=$(bws secret get $BWS_PELICAN_NODE_TOKEN_ID | jq -r .value)"
+ansible-playbook ansible/playbooks/pelican-wings.yaml
 ```
 
 The role asserts the three credentials are non-empty before touching the host,
-so a forgotten `-e` fails immediately rather than installing a daemon that
-cannot authenticate. The closing task prints the tailnet address and the
+so an empty Bitwarden entry fails immediately rather than installing a daemon
+that cannot authenticate. The closing task prints the tailnet address and the
 `import mc_server` line to add to the gateway's Caddyfile.
 
 ### Why it is configured the way it is
 
+- **The config is merged, not templated.** Wings writes its full config back
+  to `/etc/pelican/config.yml` at boot, with every default filled in.
+  `templates/config.yml.j2` lists only the keys the role owns. The role merges
+  them into the live file and writes only when a parsed value differs, so a run
+  with nothing to change does not restart Wings. The write hides its diff
+  because it carries the token, so a separate task prints the names (never the
+  values) of the keys that will change. Settings changed in the Panel or by
+  Wings itself are left alone unless the role owns that key.
 - **Wings speaks plain HTTP** (`api.ssl.enabled: false`). The browser talks to
   Wings directly for the console websocket and the file manager, so it needs a
   trusted cert -- but the Envoy gateway already holds the wildcard and terminates
@@ -516,4 +549,4 @@ only needed for a second machine. Three changes, no new patterns: a
 `terragrunt/proxmox/vm/wings-2/` directory plus a `wings-2` entry under `games`
 in `inventory/hosts.yaml`; a copy of `kubernetes/apps/pelican/wings-1.yaml` with
 the name, hostname and `EndpointSlice` address changed (the wildcard cert
-already covers it); then register the Node and re-run `composite/wings.yaml`.
+already covers it); then register the Node and run `site.yaml --limit wings-2`.
