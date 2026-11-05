@@ -76,6 +76,7 @@
 		# cluster's subnet router out of the player data path.
 		117.18.125.45:25565 {
 			import mc_server mc 100.68.244.45:25565
+			import mc_server bmc 100.68.244.45:25566
 
 			# Matched nothing above: a raw-IP connect or an unknown name. The
 			# always-true 1-byte matcher is deliberate. A matcher-less route is
