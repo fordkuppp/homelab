@@ -6,6 +6,9 @@ terragrunt = "1.1.6"
 [env]
 _.file = '.env'
 SOPS_AGE_KEY_FILE = "{{ exec(command='git rev-parse --show-toplevel')}}/sops/key.txt"
+# Ansible only finds ansible.cfg in the current directory; this makes the
+# inventory and roles resolve from anywhere in the repo.
+ANSIBLE_CONFIG = "{{ config_root }}/ansible/ansible.cfg"
 
 [tasks.hello]
 description = "Hello, mise!"
@@ -16,3 +19,23 @@ run = "bws secret list"
 
 [tasks.age-key]
 run = "bws secret get ${BWS_SOPS_AGE_ID} | jq -r .value > ${SOPS_AGE_KEY_FILE}"
+
+[tasks."ansible:edge"]
+description = "Provision the edge VPS (site.yaml, edge group)"
+dir = "{{ config_root }}"
+run = "ansible-playbook ansible/playbooks/site.yaml --limit edge"
+
+[tasks."ansible:edge:dry-run"]
+description = "Show what ansible:edge would change, without changing it"
+dir = "{{ config_root }}"
+run = "ansible-playbook ansible/playbooks/site.yaml --limit edge --check --diff"
+
+[tasks."ansible:games"]
+description = "Provision the Wings host(s) (site.yaml, games group)"
+dir = "{{ config_root }}"
+run = "ansible-playbook ansible/playbooks/site.yaml --limit games"
+
+[tasks."ansible:games:dry-run"]
+description = "Show what ansible:games would change, without changing it"
+dir = "{{ config_root }}"
+run = "ansible-playbook ansible/playbooks/site.yaml --limit games --check --diff"

@@ -3,7 +3,7 @@
 # over the tailnet. What is collected is the hand-written file under
 # roles/otel_collector/files/ that the group's otelcol_config_file names.
 - name: Install the OpenTelemetry Collector
-  hosts: "{{ otelcol_hosts | default('edge:games') }}"
+  hosts: edge:games
   become: true
   roles:
     - otel_collector

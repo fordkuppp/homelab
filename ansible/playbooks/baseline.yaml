@@ -1,9 +1,8 @@
 ---
 # Host baseline: key-only SSH, conffile-safe unattended security upgrades, and
-# fail2ban. Defaults to the internet-facing edge VPS; composite playbooks for
-# other groups override baseline_hosts.
+# fail2ban, on every managed box. Use --limit to target one.
 - name: Baseline host hardening
-  hosts: "{{ baseline_hosts | default('edge') }}"
+  hosts: edge:games
   become: true
   roles:
     - baseline

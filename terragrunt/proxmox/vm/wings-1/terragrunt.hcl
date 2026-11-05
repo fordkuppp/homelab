@@ -19,7 +19,7 @@ locals {
   secrets = include.root.locals.secrets
 }
 
-# Pelican Wings host. Configured entirely by ansible/playbooks/composite/wings.yaml
+# Pelican Wings host. Configured entirely by ansible/playbooks/site.yaml (--limit wings-1)
 # -- the cloud image already brings docker-ce and nfs-common, which is all Wings
 # needs from the image, so there is no user_data.
 inputs = {
