@@ -50,6 +50,9 @@ spec:
       grafana.ini:
         server:
           domain: grafana.local.fordkuppp.me
+          # Without this Grafana derives http://<domain>:3000/ for OAuth
+          # redirect_uri and alert links, since TLS ends at the gateway.
+          root_url: https://grafana.local.fordkuppp.me/
         unified_alerting:
           enabled: true
         database:
