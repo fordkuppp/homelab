@@ -1,0 +1,17 @@
+---
+# Every managed box, every concern, in dependency order. Each imported play
+# names its own target group, so this runs the right roles on the right hosts;
+# narrow it to one machine with --limit:
+#
+#   ansible-playbook ansible/playbooks/site.yaml --limit derp-bkk-01
+#   ansible-playbook ansible/playbooks/site.yaml --limit wings-1
+#
+# Order that matters: tailscale-derp rebinds derper to the first IP before
+# caddy-gateway claims :443 on the second, and pelican-wings brings Docker
+# before otel-collector puts its user in the docker group.
+- import_playbook: baseline.yaml
+- import_playbook: tailscale-derp.yaml
+- import_playbook: pelican-wings.yaml
+- import_playbook: anubis.yaml
+- import_playbook: caddy-gateway.yaml
+- import_playbook: otel-collector.yaml
