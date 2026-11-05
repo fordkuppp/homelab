@@ -7,6 +7,14 @@
 # conffile (the apt module passes --force-confold), and the first start already
 # runs this config.
 
+- name: Fail fast when no collector config is chosen
+  ansible.builtin.assert:
+    that:
+      - otelcol_config_file | length > 0
+    fail_msg: >-
+      otelcol_config_file is unset for {{ inventory_hostname }}. Set it in the
+      host's inventory/group_vars file to one of roles/otel_collector/files/.
+
 # Same name and shape the package's preinst would create; it skips creation
 # when the user exists. In systemd-journal because the journald receiver runs
 # journalctl as this user, which otherwise sees only its own entries. Extra

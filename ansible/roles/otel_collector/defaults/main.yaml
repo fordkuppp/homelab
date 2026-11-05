@@ -11,7 +11,9 @@ otelcol_deb_url: "https://github.com/open-telemetry/opentelemetry-collector-rele
 otelcol_deb_cache: "/var/cache/otelcol/otelcol-contrib_{{ otelcol_version }}_amd64.deb"
 
 # Which files/ config this host gets. Set per group in inventory/group_vars.
-otelcol_config_file: edge.yaml
+# No default on purpose: a new host that forgot it would otherwise get another
+# box's config without complaint. The role fails fast instead.
+otelcol_config_file: ""
 
 # Groups the service user joins on top of systemd-journal, e.g. docker for a
 # host whose config reads the Docker socket.
