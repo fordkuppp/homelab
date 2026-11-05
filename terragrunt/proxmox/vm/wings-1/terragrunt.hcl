@@ -27,7 +27,7 @@ inputs = {
   vm_id   = 1201
 
   cpu_cores    = 4
-  memory       = 8192
+  memory       = 16384
   disk_size_gb = 100
   disk_discard = "on"
   disk_ssd     = true
