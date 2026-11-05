@@ -24,6 +24,48 @@
     deb: "{{ anubis_deb_cache }}"
   notify: Restart Anubis
 
+# The policy's country rules need a GeoIP database on disk before Anubis
+# starts. The updater fetches DB-IP's free country database; the timer keeps it
+# current. Run once here so a fresh box has a database on its first start.
+- name: Create the GeoIP database directory
+  ansible.builtin.file:
+    path: /var/lib/anubis-geoip
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the GeoIP updater
+  ansible.builtin.copy:
+    src: anubis-geoip-update
+    dest: /usr/local/sbin/anubis-geoip-update
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the GeoIP updater units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - anubis-geoip-update.service
+    - anubis-geoip-update.timer
+
+- name: Fetch the GeoIP database if it is missing
+  ansible.builtin.command:
+    cmd: /usr/local/sbin/anubis-geoip-update
+    creates: /var/lib/anubis-geoip/dbip-country-lite.mmdb
+
+- name: Enable the monthly GeoIP refresh
+  ansible.builtin.systemd:
+    name: anubis-geoip-update.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
 - name: Render the instance environment
   ansible.builtin.template:
     src: instance.env.j2

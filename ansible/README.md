@@ -290,8 +290,22 @@ knowing:
 - `TARGET=" "` -- a single space -- is Anubis's documented value for "there is
   no upstream, I only answer the check endpoint".
 - The policy is upstream's default with `DENY` answering 403 instead of 200,
-  because in subrequest mode a 200 from the check endpoint means "allow". The
-  GeoIP/ASN rules are dropped (no Thoth database here).
+  because in subrequest mode a 200 from the check endpoint means "allow".
+  The tier a plain browser lands in (weight 10-19) is difficulty 4.
+- **Visitors outside Thailand weigh 10 more.** Anubis can only match a *list*
+  of countries, so the policy adds 10 to every request and takes it back for
+  `TH`; an address the database cannot place counts as foreign. A browser
+  abroad lands in the 20-29 tier, which is also difficulty 4, so for browsers
+  this changes nothing yet. The visible effect is on non-browser clients
+  (curl, scripts, chat-app link previews): from Thailand they pass
+  unchallenged, from anywhere else they get a challenge they cannot solve.
+- The country database is DB-IP's free *IP to Country Lite* (CC BY 4.0,
+  <https://db-ip.com>), no account needed, at
+  `/var/lib/anubis-geoip/dbip-country-lite.mmdb`. The `anubis-geoip-update`
+  timer refreshes it monthly by renaming the new file over the old one --
+  Anubis memory-maps it, so it must never be overwritten in place -- and
+  restarts Anubis, which costs visitors one fresh challenge (see the next
+  point). Upstream's ASN rules stay off: they need a second database.
 - `REDIRECT_DOMAINS` is `anubis_redirect_domains` in `group_vars/edge.yaml`:
   every hostname whose site block imports the anubis snippet. Unset, Anubis
   warns about an open redirect.
