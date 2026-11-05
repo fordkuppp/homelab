@@ -53,6 +53,16 @@
   changed_when: false
   check_mode: false # read-only; later tasks need its output in --check too
 
+- name: Create the controller's build cache directory
+  delegate_to: localhost
+  run_once: true
+  become: false
+  ansible.builtin.file:
+    path: "{{ caddy_build_dir }}"
+    state: directory
+    mode: "0755"
+  check_mode: false # controller-only; the build below needs it in --check too
+
 - name: Build Caddy with caddy-l4 for {{ caddy_build_goos }}/{{ caddy_build_goarch }}
   delegate_to: localhost
   run_once: true
