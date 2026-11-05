@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh the Anubis GeoIP country database
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/anubis-geoip-update

@@ -6,9 +6,12 @@
 # check endpoint's status code, and a 200 means "let it through", so with the
 # default a denied client would be waved in.
 #
-# The country and ASN weighting rules are dropped: they need a GeoIP database
-# (upstream's Thoth service) that is not configured here, and without one
-# Anubis only logs a warning for each at every start.
+# Upstream's country and ASN rules are replaced by one country rule of our
+# own: every visitor outside Thailand weighs 10 more. The country comes from
+# DB-IP's free database, kept current by the anubis-geoip-update timer.
+#
+# The moderate tier (weight 10-19, where a plain browser lands) is raised from
+# difficulty 2 to 4.
 bots:
   - import: (data)/bots/_deny-pathological.yaml
   - import: (data)/bots/aggressive-brazilian-scrapers.yaml
@@ -24,6 +27,26 @@ bots:
     action: WEIGH
     weight:
       adjust: 10
+  # "Everyone outside Thailand": Anubis can only match a LIST of countries,
+  # with no negation and no country variable in expressions. So weigh every
+  # request, then take the weight back for Thailand. An address the database
+  # cannot place counts as outside Thailand.
+  - name: outside-thailand
+    path_regex: .*
+    action: WEIGH
+    weight:
+      adjust: 10
+  - name: thailand
+    action: WEIGH
+    geoip:
+      countries:
+        - TH
+    weight:
+      adjust: -10
+
+geoip:
+  country:
+    path: /var/lib/anubis-geoip/dbip-country-lite.mmdb
 
 dnsbl: false
 
@@ -65,7 +88,7 @@ thresholds:
     action: CHALLENGE
     challenge:
       algorithm: fast
-      difficulty: 2
+      difficulty: 4
   - name: mild-proof-of-work
     expression:
       all:

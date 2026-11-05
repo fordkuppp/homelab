@@ -1,0 +1,37 @@
+#!/bin/bash
+# Refresh the country database Anubis uses for its GeoIP rules.
+#
+# DB-IP's "IP to Country Lite" is free, needs no account, and is published
+# monthly in MaxMind's mmdb format (CC BY 4.0, https://db-ip.com). Early in a
+# month the new file may not be out yet, so last month's is the fallback.
+#
+# Anubis memory-maps the database, so the new file is renamed over the old one
+# (never written in place) and Anubis restarted to pick it up. A restart
+# regenerates Anubis's signing key, so visitors solve one fresh challenge.
+set -euo pipefail
+
+dir=/var/lib/anubis-geoip
+dest="$dir/dbip-country-lite.mmdb"
+this_month=$(date -u +%Y-%m)
+last_month=$(date -u -d "$(date -u +%Y-%m-01) -1 month" +%Y-%m)
+
+tmp=$(mktemp "$dir/.dbip-country-lite.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+
+for month in "$this_month" "$last_month"; do
+	url="https://download.db-ip.com/free/dbip-country-lite-$month.mmdb.gz"
+	if curl -fsSL --retry 3 "$url" | gunzip >"$tmp" && [ -s "$tmp" ]; then
+		chmod 0644 "$tmp"
+		if cmp -s "$tmp" "$dest"; then
+			echo "already current ($month)"
+			exit 0
+		fi
+		mv "$tmp" "$dest"
+		systemctl try-restart 'anubis@*.service'
+		echo "installed $month"
+		exit 0
+	fi
+done
+
+echo "no DB-IP country database found for $this_month or $last_month" >&2
+exit 1
