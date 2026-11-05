@@ -11,3 +11,4 @@ resources:
   - syncthing.yaml
   - uptime-kuma.yaml
   - pelican.yaml
+  - upsnap.yaml

@@ -1,0 +1,10 @@
+# Deliberately NOT enrolled in the ambient mesh: the pod runs with
+# hostNetwork, which ztunnel cannot capture, and it never talks to other
+# in-cluster services anyway.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: upsnap
+  labels:
+    # Selects this namespace into the k8up-repo ClusterExternalSecret.
+    k8up-backup: enabled

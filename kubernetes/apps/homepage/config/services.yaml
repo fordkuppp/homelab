@@ -23,6 +23,10 @@
         icon: pelican-panel
         href: https://panel.local.fordkuppp.me
         description: Game server panel
+    - UpSnap:
+        icon: upsnap
+        href: https://wol.local.fordkuppp.me
+        description: Wake-on-LAN
 - Media:
     - Jellyfin:
         icon: jellyfin

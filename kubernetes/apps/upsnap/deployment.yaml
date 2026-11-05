@@ -1,0 +1,90 @@
+# Wake-on-LAN for the desktop (MAC 74:56:3c:66:80:07). Replaces the script on
+# the old hand-built VM.
+#
+# hostNetwork is the whole point: a magic packet is an L2 broadcast, and the
+# pod network would never put it on the LAN. On the host network the packet
+# leaves k3s-1's interface on vmbr0, the same segment as the desktop. The cost
+# is that UpSnap binds :8090 on the node itself.
+#
+# The device itself is configured in the UpSnap UI and lives in its database,
+# not here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upsnap
+  namespace: upsnap
+  labels:
+    app.kubernetes.io/name: upsnap
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: upsnap
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: upsnap
+    spec:
+      enableServiceLinks: false
+      hostNetwork: true
+      # Without this a hostNetwork pod gets the node's resolv.conf and cannot
+      # resolve cluster names; CoreDNS still forwards everything else upstream.
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: upsnap
+          image: ghcr.io/seriousm4x/upsnap:5.7.2
+          env:
+            - name: TZ
+              value: Asia/Bangkok
+            - name: UPSNAP_HTTP_LISTEN
+              value: 0.0.0.0:8090
+            - name: UPSNAP_SCAN_RANGE
+              value: 192.168.1.0/24
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          # NET_RAW is for the privileged ping that drives the online/offline
+          # status, and for nmap device discovery. Sending the magic packet
+          # itself is plain UDP and needs nothing extra.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [NET_RAW]
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /app/pb_data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: upsnap-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upsnap
+  namespace: upsnap
+spec:
+  selector:
+    app.kubernetes.io/name: upsnap
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
