@@ -1,8 +1,13 @@
 ---
-# Provision the whole Wings VM in one run: harden the host, then install
-# tailscaled and Wings. import_playbook paths are relative to this file, so
-# ../ points back to the playbooks root.
+# Provision the whole Wings VM in one run: harden the host, install tailscaled
+# and Wings, then the telemetry agent. Wings brings Docker with it, so the
+# docker group exists by the time the collector's user joins it.
+# import_playbook paths are relative to this file, so ../ points back to the
+# playbooks root.
 - import_playbook: ../baseline.yaml
   vars:
     baseline_hosts: games
 - import_playbook: ../pelican-wings.yaml
+- import_playbook: ../otel-collector.yaml
+  vars:
+    otelcol_hosts: games

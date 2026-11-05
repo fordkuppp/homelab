@@ -1,5 +1,6 @@
-# OpenTelemetry Collector on the edge VPS. Hand-written -- Ansible copies it
-# as-is and validates it with the installed binary before restarting.
+# OpenTelemetry Collector on the edge VPS (otelcol_config_file: edge.yaml).
+# Hand-written -- Ansible copies it as-is and validates it with the installed
+# binary before restarting.
 #
 # Everything goes to the cluster's collector over the tailnet
 # (otel-http.local.fordkuppp.me resolves to the Envoy gateway's LAN VIP, which

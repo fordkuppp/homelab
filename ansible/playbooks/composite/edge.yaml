@@ -8,3 +8,5 @@
 - import_playbook: ../anubis.yaml
 - import_playbook: ../caddy-gateway.yaml
 - import_playbook: ../otel-collector.yaml
+  vars:
+    otelcol_hosts: edge

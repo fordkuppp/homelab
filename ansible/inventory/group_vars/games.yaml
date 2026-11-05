@@ -20,3 +20,9 @@ pelican_node_token: ""    # runtime only
 # Everything this group does is root work. The `ubuntu` user gets NOPASSWD sudo
 # from the proxmox-vm module's cloud-init, so no become password is needed.
 ansible_become: true
+
+# Telemetry: per-container stats come from the Docker socket, so the collector
+# user joins the docker group. That is root-equivalent on this box; the
+# collector only reads, but it is the price of docker_stats.
+otelcol_config_file: wings.yaml
+otelcol_extra_groups: [docker]

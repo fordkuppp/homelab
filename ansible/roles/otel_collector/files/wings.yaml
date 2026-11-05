@@ -1,0 +1,129 @@
+# OpenTelemetry Collector on the Wings VM (otelcol_config_file: wings.yaml).
+# Hand-written -- Ansible copies it as-is and validates it with the installed
+# binary before restarting.
+#
+# Neither the Pelican Panel nor Wings exposes Prometheus metrics, so game
+# servers are measured where they actually run: as Docker containers. Each
+# container is named after its Pelican server UUID (the one in the Panel URL).
+#
+# Everything goes to the cluster's collector at otel-http.local.fordkuppp.me,
+# same as the edge VPS. This box is on the LAN, so it reaches the gateway VIP
+# directly.
+
+extensions:
+  # Remembers the journal cursor across restarts, so a restart neither drops
+  # nor re-sends log lines.
+  file_storage/journald:
+    directory: /var/lib/otelcol-contrib/journald
+
+receivers:
+  journald:
+    directory: /var/log/journal
+    units:
+      - wings
+      - docker
+      - tailscaled
+      - fail2ban
+      - ssh
+    priority: info
+    start_at: end
+    storage: file_storage/journald
+    convert_to_semantic_conventions: true
+
+  # Per-container CPU, memory, network and block I/O for every game server.
+  # Reads /var/run/docker.sock, hence otelcol_extra_groups: [docker].
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    # docker-ce is unpinned and current Engines refuse anything below 1.44.
+    api_version: "1.44"
+
+  host_metrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      filesystem: {}
+      disk: {}
+      network: {}
+
+processors:
+  # 8 GB VM, but the game servers are what it is for.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 300
+    spike_limit_mib: 75
+
+  batch: {}
+
+  resource_detection/system:
+    detectors: [system]
+    system:
+      hostname_sources: [os]
+
+  # job/instance come from service.name and service.instance.id. service.name
+  # is insert-only, so the per-unit names on logs survive.
+  resource/host:
+    attributes:
+      - key: host.name
+        value: wings-1
+        action: upsert
+      - key: service.name
+        value: wings-host
+        action: insert
+      - key: service.instance.id
+        value: wings-1
+        action: insert
+
+  resource/docker:
+    attributes:
+      - key: service.name
+        value: wings-docker
+        action: upsert
+      - key: service.instance.id
+        value: wings-1
+        action: upsert
+
+  # docker_stats puts the container identity on the RESOURCE, and the cluster
+  # collector's prometheusremotewrite only turns resource attributes into
+  # target_info, not labels. Without this every container would write the
+  # same series. Copy the identity onto each data point instead.
+  transform/docker:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["container_name"], resource.attributes["container.name"])
+          - set(attributes["container_image"], resource.attributes["container.image.name"])
+
+  transform/journald:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["service.name"], attributes["journald._SYSTEMD_UNIT"])
+          - replace_pattern(attributes["service.name"], "\\.service$", "")
+
+  groupbyattrs/service:
+    keys: [service.name]
+
+exporters:
+  otlp_http:
+    endpoint: https://otel-http.local.fordkuppp.me
+
+service:
+  extensions: [file_storage/journald]
+  pipelines:
+    logs:
+      receivers: [journald]
+      processors: [memory_limiter, transform/journald, groupbyattrs/service, resource/host, batch]
+      exporters: [otlp_http]
+    metrics/docker:
+      receivers: [docker_stats]
+      processors: [memory_limiter, transform/docker, resource/docker, batch]
+      exporters: [otlp_http]
+    metrics/host:
+      receivers: [host_metrics]
+      processors: [memory_limiter, resource_detection/system, resource/host, batch]
+      exporters: [otlp_http]
