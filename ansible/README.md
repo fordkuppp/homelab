@@ -23,8 +23,9 @@ its own too.
 
 ## Provision the whole Wings VM
 
-`composite/wings.yaml` runs the same three-stage shape on the `games` group --
-baseline hardening, then tailscaled, then Wings:
+`composite/wings.yaml` runs the same shape on the `games` group -- baseline
+hardening, then tailscaled, then Wings, then the
+[otel-collector](#otel-collector):
 
 ```fish
 cd ansible
@@ -324,24 +325,38 @@ moment, then the app.
 
 ## otel-collector
 
-The OpenTelemetry Collector (contrib build) on the `edge` box, shipping its
-metrics and logs to the cluster's collector at `otel-http.local.fordkuppp.me`
-over the tailnet. That collector already writes metrics to Prometheus and logs
-to Loki, so the VPS shows up next to the cluster with no cluster-side change.
+The OpenTelemetry Collector (contrib build) on the `edge` box and the Wings VM,
+shipping metrics and logs to the cluster's collector at
+`otel-http.local.fordkuppp.me`. That collector already writes metrics to
+Prometheus and logs to Loki, so both boxes show up next to the cluster with no
+cluster-side change.
 
-What it collects is the hand-written `roles/otel_collector/files/config.yaml`;
-the role installs upstream's pinned `.deb` (`otelcol_version`,
-Renovate-tracked), copies the file, and validates it with the installed binary
-before restarting. A bad edit never replaces a working config.
+What each box collects is a hand-written file under `roles/otel_collector/files/`,
+picked per group by `otelcol_config_file` (`edge.yaml`, `wings.yaml`). The role
+installs upstream's pinned `.deb` (`otelcol_version`, Renovate-tracked), copies
+the file, and validates it with the installed binary before restarting. A bad
+edit never replaces a working config.
+
+**Edge VPS** (`edge.yaml`), all metrics `instance="derp-bkk-01"`:
 
 | Source | Receiver | Lands as |
 |---|---|---|
 | Caddy, per site (`metrics { per_host }` in the Caddyfile) | `prometheus`, `localhost:2019` | `job="caddy"` |
 | Anubis | `prometheus`, `127.0.0.1:9090` | `job="anubis"` |
-| CPU, memory, load, disk, filesystem, network | `hostmetrics` | `job="edge-host"` |
+| CPU, memory, load, disk, filesystem, network | `host_metrics` | `job="edge-host"` |
 | caddy, anubis@caddy, derper, tailscaled, fail2ban, ssh | `journald` | Loki, `service_name` = the unit |
 
-All metrics carry `instance="derp-bkk-01"`.
+**Wings VM** (`wings.yaml`), all metrics `instance="wings-1"`:
+
+| Source | Receiver | Lands as |
+|---|---|---|
+| Each game server's container: CPU, memory, network, block I/O | `docker_stats` | `job="wings-docker"`, `container_name` = Pelican server UUID |
+| CPU, memory, load, disk, filesystem, network | `host_metrics` | `job="wings-host"` |
+| wings, docker, tailscaled, fail2ban, ssh | `journald` | Loki, `service_name` = the unit |
+
+Pelican itself (Panel and Wings) has no metrics endpoint, which is why game
+servers are measured as containers. For in-game numbers (TPS, players) add a
+Prometheus exporter plugin to the Minecraft server and a scrape job here.
 
 Things that are not obvious from the config:
 
@@ -358,20 +373,31 @@ Things that are not obvious from the config:
   `/var/log/journal`.
 - **The journal cursor is persisted** under `/var/lib/otelcol-contrib`, so a
   restart neither drops nor re-sends lines.
-- **A 150 MiB memory limit.** The VPS has under 1 GB and the collector should
-  shed data before it competes with Caddy or derper.
+- **A 150 MiB memory limit on the edge** (300 MiB on Wings). The VPS has under
+  1 GB and the collector should shed data before it competes with Caddy or
+  derper.
+- **Container identity is copied onto every data point.** `docker_stats` puts
+  the container name on the resource, and the cluster collector's
+  `prometheusremotewrite` only turns resource attributes into `target_info`.
+  Without `transform/docker` every game server would write the same series.
+- **The Wings collector is in the `docker` group** to read the socket. That is
+  root-equivalent on that box; it is the price of `docker_stats`.
+- **`api_version: "1.44"` is pinned** for `docker_stats`: `docker-ce` is
+  unpinned, and current Engines refuse older API versions.
 - **No traces.** Caddy can emit OTLP traces, but the cluster collector has no
   traces pipeline or backend yet.
 
 ```fish
 cd ansible
-ansible-playbook playbooks/otel-collector.yaml
+ansible-playbook playbooks/otel-collector.yaml            # both boxes
+ansible-playbook playbooks/otel-collector.yaml -e otelcol_hosts=games  # one group
 ```
 
 Verify with `systemctl status otelcol-contrib` and
 `journalctl -u otelcol-contrib -n 20` on the box (look for export errors), then
-in Grafana: `up{instance="derp-bkk-01"}` in Prometheus, and
-`{service_name="caddy"}` in Loki.
+in Grafana: `up{instance="derp-bkk-01"}` and
+`container_cpu_utilization_ratio{instance="wings-1"}` in Prometheus, and
+`{service_name="caddy"}` / `{service_name="wings"}` in Loki.
 
 ## docker
 

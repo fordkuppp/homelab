@@ -48,3 +48,6 @@ anubis_redirect_domains:
 # Renovate tracks both.
 caddy_version: "v2.11.7"
 caddy_l4_version: "v0.1.2"
+
+# --- Telemetry ---
+otelcol_config_file: edge.yaml

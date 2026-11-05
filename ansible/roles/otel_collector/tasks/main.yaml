@@ -9,14 +9,15 @@
 
 # Same name and shape the package's preinst would create; it skips creation
 # when the user exists. In systemd-journal because the journald receiver runs
-# journalctl as this user, which otherwise sees only its own entries.
+# journalctl as this user, which otherwise sees only its own entries. Extra
+# groups (docker on the Wings host) come from otelcol_extra_groups.
 - name: Create the collector service user
   ansible.builtin.user:
     name: otelcol-contrib
     system: true
     create_home: false
     shell: /sbin/nologin
-    groups: [systemd-journal]
+    groups: "{{ ['systemd-journal'] + otelcol_extra_groups }}"
     append: true
   notify: Restart otelcol-contrib
 
@@ -42,7 +43,7 @@
 # to start (closed), never falls back to the sample.
 - name: Install the collector config
   ansible.builtin.copy:
-    src: config.yaml
+    src: "{{ otelcol_config_file }}"
     dest: /etc/otelcol-contrib/config.yaml
     owner: root
     group: otelcol-contrib

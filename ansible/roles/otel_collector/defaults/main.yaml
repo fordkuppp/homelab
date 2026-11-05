@@ -1,6 +1,7 @@
 ---
-# What the collector collects is NOT configured here: that is the hand-written
-# files/config.yaml. This role only installs a pinned build and ships it.
+# What the collector collects is NOT configured here: that is a hand-written
+# file under files/, one per host group, picked by otelcol_config_file. This
+# role only installs a pinned build and ships it.
 
 # Pinned; Renovate tracks the releases repo (see renovate.json). The contrib
 # build is required -- the journald receiver is not in the core distribution.
@@ -8,3 +9,10 @@ otelcol_version: "v0.164.0"
 
 otelcol_deb_url: "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/{{ otelcol_version }}/otelcol-contrib_{{ otelcol_version | regex_replace('^v', '') }}_linux_amd64.deb"
 otelcol_deb_cache: "/var/cache/otelcol/otelcol-contrib_{{ otelcol_version }}_amd64.deb"
+
+# Which files/ config this host gets. Set per group in inventory/group_vars.
+otelcol_config_file: edge.yaml
+
+# Groups the service user joins on top of systemd-journal, e.g. docker for a
+# host whose config reads the Docker socket.
+otelcol_extra_groups: []
