@@ -5,17 +5,19 @@
 tailscale_accept_routes: false
 tailscale_tags: "tag:games"
 
-# Tagged Tailscale pre-auth key. NEVER commit -- pass at run time from
-# Bitwarden Secrets Manager:
-#   ansible-playbook playbooks/composite/wings.yaml \
-#     -e "tailscale_authkey=$(bws secret get $BWS_TS_GAMES_AUTHKEY_ID | jq -r .value)"
-tailscale_authkey: "" # runtime only
+# Secrets are looked up from Bitwarden Secrets Manager at run time (needs
+# BWS_ACCESS_TOKEN, which mise loads from .env). The UUIDs are secret IDs, not
+# secrets. A lookup only runs when its variable is used, so the auth key is
+# fetched only on a first tailnet join.
 
-# Node credentials the Panel generates when the Node is created. Runtime only,
-# same handling as above. See ansible/README.md for where they come from.
-pelican_node_uuid: ""     # runtime only
-pelican_node_token_id: "" # runtime only
-pelican_node_token: ""    # runtime only
+# Tagged Tailscale pre-auth key (`ts_games_authkey`).
+tailscale_authkey: "{{ lookup('community.general.bitwarden_secrets_manager', '3fc3b667-7bbb-41c1-9a66-b4f600ba1f96').value }}"
+
+# Node credentials the Panel generates when the Node is created. See
+# ansible/README.md for where they come from.
+pelican_node_uuid: "{{ lookup('community.general.bitwarden_secrets_manager', '995acb19-0fd6-4c01-8c2a-b4f600b8926f').value }}"
+pelican_node_token_id: "{{ lookup('community.general.bitwarden_secrets_manager', '4d261c80-2e61-49d4-bc07-b4f600b89d8b').value }}"
+pelican_node_token: "{{ lookup('community.general.bitwarden_secrets_manager', '16815a54-6517-4948-9091-b4f600b8d2c6').value }}"
 
 # Everything this group does is root work. The `ubuntu` user gets NOPASSWD sudo
 # from the proxmox-vm module's cloud-init, so no become password is needed.
