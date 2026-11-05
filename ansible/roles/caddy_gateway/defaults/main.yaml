@@ -17,5 +17,8 @@ caddy_custom_bin: /usr/local/bin/caddy
 caddy_build_goos: linux
 caddy_build_goarch: amd64
 # Version-stamped on the controller, so a bump forces a rebuild while a repeat
-# run at the same versions is a no-op.
-caddy_build_artifact: "/tmp/caddy-{{ caddy_version }}-l4-{{ caddy_l4_version }}"
+# run at the same versions is a no-op. In the user cache, not /tmp: /tmp is
+# cleared on reboot, and a rebuilt binary never matches the deployed one
+# byte for byte, so every reboot would mean a Caddy restart on the next run.
+caddy_build_dir: "{{ lookup('ansible.builtin.env', 'XDG_CACHE_HOME') | default(lookup('ansible.builtin.env', 'HOME') ~ '/.cache', true) }}/homelab"
+caddy_build_artifact: "{{ caddy_build_dir }}/caddy-{{ caddy_version }}-l4-{{ caddy_l4_version }}"

@@ -5,7 +5,7 @@ Lifts the snippet from the real Caddyfile, runs the caddy-l4 build on loopback
 with labelled upstreams plus a fallback, and fires hand-built handshake packets
 at the listener. Needs no network and no Minecraft client.
 
-    python3 ansible/roles/caddy_gateway/tests/mc_routing.py /tmp/caddy-v2.11.7-l4-v0.1.2
+    python3 ansible/roles/caddy_gateway/tests/mc_routing.py ~/.cache/homelab/caddy-v2.11.7-l4-v0.1.2
 """
 import re
 import socket

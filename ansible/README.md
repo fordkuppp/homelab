@@ -263,13 +263,14 @@ ships, so a mistake is caught before anything touches the VPS:
 
 ```fish
 # Parses, and shows the matchers caddy will actually run
-/tmp/caddy-v2.11.7-l4-v0.1.2 adapt --config ansible/roles/caddy_gateway/files/Caddyfile --adapter caddyfile
+~/.cache/homelab/caddy-v2.11.7-l4-v0.1.2 adapt --config ansible/roles/caddy_gateway/files/Caddyfile --adapter caddyfile
 
 # Routes hand-built handshakes to the right upstream (no Minecraft client needed)
-python3 ansible/roles/caddy_gateway/tests/mc_routing.py /tmp/caddy-v2.11.7-l4-v0.1.2
+python3 ansible/roles/caddy_gateway/tests/mc_routing.py ~/.cache/homelab/caddy-v2.11.7-l4-v0.1.2
 ```
 
-The build artifact is created by the first play run; the adapt check is also
+The build artifact is created by the first play run (or dry run) in
+`~/.cache/homelab/`, or `$XDG_CACHE_HOME/homelab/` if that is set; the adapt check is also
 what the role's `validate:` does on the VPS before it installs the file.
 
 ### 5. Run it
