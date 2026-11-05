@@ -1,0 +1,16 @@
+# Read by gitleaks (CI: .github/workflows/validate.yaml) from the repo root.
+# Keeps every default rule; only the allowlist below is added.
+[extend]
+useDefault = true
+
+# Ansible reads its secrets from Bitwarden Secrets Manager by secret ID
+# (ansible/inventory/group_vars/). The ID is a UUID reference, not a secret,
+# but beside a variable named *_token or *authkey it trips generic-api-key.
+# Allowlisted only in that exact lookup form, so a real token pasted anywhere
+# else -- including into the same variables -- is still caught.
+[allowlist]
+description = "Bitwarden Secrets Manager secret IDs in Ansible lookups"
+regexTarget = "line"
+regexes = [
+  '''lookup\('community\.general\.bitwarden_secrets_manager', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'\)''',
+]
