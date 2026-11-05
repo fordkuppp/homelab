@@ -6,24 +6,30 @@
       - debian-archive-keyring
       - apt-transport-https
       - curl
+      - python3-debian # deb822_repository needs it on the target
     state: present
     update_cache: true
 
-- name: Add the Caddy repository signing key
-  ansible.builtin.get_url:
-    url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
-    dest: /usr/share/keyrings/caddy-stable-archive-keyring.asc
-    owner: root
-    group: root
-    mode: "0644"
-
+# deb822_repository fetches the signing key itself and keeps it beside the
+# source as /etc/apt/keyrings/caddy-stable.asc.
 - name: Add the Caddy apt repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.asc]
-      https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main
-    filename: caddy-stable
-    state: present
+  ansible.builtin.deb822_repository:
+    name: caddy-stable
+    types: deb
+    uris: https://dl.cloudsmith.io/public/caddy/stable/deb/debian
+    suites: any-version
+    components: main
+    signed_by: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+
+# What apt_repository wrote before the move to deb822. Left in place, apt
+# would see the same repository twice.
+- name: Remove the old one-line Caddy source and its key
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/caddy-stable.list
+    - /usr/share/keyrings/caddy-stable-archive-keyring.asc
 
 - name: Install Caddy
   ansible.builtin.apt:

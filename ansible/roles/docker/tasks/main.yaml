@@ -4,33 +4,28 @@
     name:
       - ca-certificates
       - curl
+      - python3-debian # deb822_repository needs it on the target
     state: present
     update_cache: true
 
-- name: Create the apt keyring directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Install the Docker apt key
-  ansible.builtin.get_url:
-    url: "{{ docker_apt_key_url }}"
-    dest: "{{ docker_apt_keyring }}"
-    owner: root
-    group: root
-    mode: "0644"
-
+# deb822_repository fetches the signing key itself and keeps it beside the
+# source as /etc/apt/keyrings/docker.asc.
 - name: Add the Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}
-      signed-by={{ docker_apt_keyring }}]
-      {{ docker_apt_repo_url }} {{ ansible_distribution_release }} stable
-    filename: docker
-    state: present
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: "{{ docker_apt_repo_url }}"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    architectures: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+    signed_by: "{{ docker_apt_key_url }}"
+
+# What apt_repository (and the cloud image before it) wrote before the move
+# to deb822. Left in place, apt would see the same repository twice.
+- name: Remove the old one-line Docker source
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/docker.list
+    state: absent
 
 - name: Install Docker Engine
   ansible.builtin.apt:
