@@ -41,6 +41,7 @@
   ansible.builtin.command:
     cmd: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
   changed_when: false
+  check_mode: false # controller-only; the build below needs it in --check too
 
 - name: Resolve the controller's Go build paths
   delegate_to: localhost
@@ -50,6 +51,7 @@
     cmd: go env GOPATH
   register: caddy_go_env
   changed_when: false
+  check_mode: false # read-only; later tasks need its output in --check too
 
 - name: Build Caddy with caddy-l4 for {{ caddy_build_goos }}/{{ caddy_build_goarch }}
   delegate_to: localhost
@@ -64,6 +66,9 @@
   environment:
     GOOS: "{{ caddy_build_goos }}"
     GOARCH: "{{ caddy_build_goarch }}"
+  # Builds on the controller only, never the VPS, so it runs in --check too:
+  # the ship step below needs the artifact to diff against.
+  check_mode: false
 
 - name: Ship the custom Caddy binary to the VPS
   ansible.builtin.copy:

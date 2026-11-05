@@ -25,6 +25,9 @@
     GOOS: "{{ derp_build_goos }}"
     GOARCH: "{{ derp_build_goarch }}"
   changed_when: false
+  # Builds into the controller's Go cache only, never the VPS, so it runs in
+  # --check too: the ship step below needs the binary to diff against.
+  check_mode: false
 
 - name: Resolve the controller's Go build paths
   delegate_to: localhost
@@ -34,6 +37,7 @@
     cmd: go env GOPATH GOHOSTOS GOHOSTARCH
   register: controller_go_env
   changed_when: false
+  check_mode: false # read-only; later tasks need its output in --check too
 
 # go install drops a cross build in bin/<goos>_<goarch>/ but a native build
 # straight in bin/, so choose the path based on whether this is a cross build.
