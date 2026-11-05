@@ -29,4 +29,5 @@ resources:
   - systems-install.yaml
   - systems.yaml
   - tailscale.yaml
+  - upsnap.yaml
   - uptime-kuma.yaml

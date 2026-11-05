@@ -1,0 +1,14 @@
+# PocketBase's SQLite database: devices, users and the OIDC provider config.
+# None of that is in Git, so this volume is the only copy; it is backed up to
+# R2 by the Schedule in k8up-schedules.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: upsnap-data-pvc
+  namespace: upsnap
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
