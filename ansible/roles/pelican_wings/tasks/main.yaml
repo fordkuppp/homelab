@@ -8,7 +8,8 @@
     fail_msg: >-
       Node credentials are unset. The Panel generates them when you create the
       Node (Admin -> Nodes -> Create); there is no API to bootstrap them cold.
-      Store them in Bitwarden and pass at run time -- see ansible/README.md.
+      Store them in Bitwarden and point the lookups in
+      inventory/group_vars/games.yaml at their IDs -- see ansible/README.md.
 
 - name: Create the Wings directories
   ansible.builtin.file:
