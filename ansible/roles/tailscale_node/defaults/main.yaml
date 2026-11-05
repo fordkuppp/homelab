@@ -1,6 +1,7 @@
 ---
-# Required. A tagged pre-auth key OR an OAuth client secret (tskey-client-...,
-# non-expiring), passed at run time (see inventory/group_vars/).
+# Required for the first join only. A tagged pre-auth key OR an OAuth client
+# secret (tskey-client-..., non-expiring), set per group in inventory/group_vars/
+# as a Bitwarden lookup. Re-runs against a node already on the tailnet skip it.
 tailscale_authkey: ""
 tailscale_hostname: "{{ inventory_hostname }}"
 # Tags advertised on join. REQUIRED when authing with an OAuth client secret

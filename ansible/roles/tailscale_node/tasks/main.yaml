@@ -1,13 +1,4 @@
 ---
-- name: Fail fast when the Tailscale auth key is missing
-  ansible.builtin.assert:
-    that:
-      - tailscale_authkey | length > 0
-    fail_msg: >-
-      tailscale_authkey is unset. Create a TAGGED pre-auth key in the Tailscale
-      admin console, store it in Bitwarden Secrets Manager, and pass it at run
-      time: -e "tailscale_authkey=$(bws secret get $BWS_TS_AUTHKEY_ID | jq -r .value)".
-
 - name: Install Tailscale via the official script
   ansible.builtin.shell:
     cmd: curl -fsSL https://tailscale.com/install.sh | sh
@@ -19,18 +10,34 @@
     enabled: true
     state: started
 
+# Read-only, so it runs in --check too; otherwise check mode skips it and the
+# join condition below has nothing to parse. Empty output (tailscaled not
+# installed yet in a dry run) counts as "not joined".
 - name: Check tailnet connection state
   ansible.builtin.command:
     cmd: tailscale status --json
   register: tailscale_status
   changed_when: false
   failed_when: false
+  check_mode: false
 
 - name: Join the tailnet
   when: >-
     tailscale_status.rc != 0
-    or (tailscale_status.stdout | from_json).BackendState | default('') != 'Running'
+    or (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('') != 'Running'
   block:
+    # Only a join needs the key, so a re-run against a node that is already
+    # up works without one -- and a spent one-shot key is no obstacle.
+    - name: Fail fast when the Tailscale auth key is missing
+      ansible.builtin.assert:
+        that:
+          - tailscale_authkey | length > 0
+        fail_msg: >-
+          tailscale_authkey is unset and this node is not on the tailnet yet.
+          Create a TAGGED pre-auth key in the Tailscale admin console, store it
+          in Bitwarden Secrets Manager, and point this group's
+          tailscale_authkey lookup in inventory/group_vars at its ID.
+
     # Passing the key by file rather than argv keeps it out of `ps`, and means
     # this block needs no blanket no_log -- so a failed join reports its reason.
     - name: Stage the auth key on tmpfs
@@ -57,6 +64,7 @@
       register: tailscale_failed_status
       changed_when: false
       failed_when: false
+      check_mode: false
 
     - name: Explain why the join did not complete
       ansible.builtin.fail:
@@ -94,6 +102,7 @@
     cmd: tailscale ip -4
   register: tailscale_ip
   changed_when: false
+  check_mode: false
 
 # Consumers (e.g. the Caddy L4 upstream for a game server) need this address,
 # and looking it up by hand in the admin console is a step worth removing.
