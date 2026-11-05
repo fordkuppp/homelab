@@ -22,7 +22,14 @@
     - "{{ pelican_wings_config_dir }}"
     - "{{ pelican_wings_root }}"
     - "{{ pelican_wings_data }}"
-    - "{{ pelican_wings_backup_dir }}"
+
+# Only the mount point -- no owner or mode. Once the share is mounted this path
+# IS the TrueNAS dataset root, and enforcing root:root 0700 on a re-run would
+# rewrite the dataset's own ownership and permissions.
+- name: Create the backup mount point
+  ansible.builtin.file:
+    path: "{{ pelican_wings_backup_dir }}"
+    state: directory
 
 # Backups go straight to TrueNAS so world data outlives the VM. `soft` so a NAS
 # outage stalls backups instead of wedging every process that touches the path.
@@ -49,15 +56,71 @@
       https://github.com/pelican/wings/releases/download/{{ pelican_wings_version }}
   notify: Restart wings
 
-- name: Render the Wings configuration
-  ansible.builtin.template:
-    src: config.yml.j2
+# --- config ---
+# Wings rewrites config.yml at boot with every default filled in, so a plain
+# template would differ on every run and restart Wings every time. Instead the
+# role merges the keys it owns (templates/config.yml.j2) into the live file and
+# compares parsed YAML, so Wings' own rewrite never counts as a change. The
+# secret-bearing tasks are no_log; the report task names changed keys only.
+- name: Check for an existing Wings configuration
+  ansible.builtin.stat:
+    path: "{{ pelican_wings_config_dir }}/config.yml"
+  register: pelican_wings_config_stat
+
+- name: Read the live Wings configuration
+  ansible.builtin.slurp:
+    src: "{{ pelican_wings_config_dir }}/config.yml"
+  register: pelican_wings_config_slurp
+  when: pelican_wings_config_stat.stat.exists
+  no_log: true
+
+- name: Merge the managed settings into the live configuration
+  ansible.builtin.set_fact:
+    pelican_wings_config_live: "{{ _live }}"
+    pelican_wings_config_desired: "{{ _live | combine(lookup('ansible.builtin.template', 'config.yml.j2') | from_yaml, recursive=true) }}"
+  vars:
+    _live: >-
+      {{ (pelican_wings_config_slurp.content | b64decode | from_yaml)
+         if pelican_wings_config_stat.stat.exists else {} }}
+  no_log: true
+
+# The write below hides its diff (it carries the token), so name what changes.
+- name: Report which Wings settings will change
+  ansible.builtin.debug:
+    msg: >-
+      {%- set changed = [] -%}
+      {%- for key, value in pelican_wings_config_desired.items() -%}
+        {%- set live = pelican_wings_config_live.get(key) -%}
+        {%- if value is mapping and live is mapping -%}
+          {%- for sub, subvalue in value.items() if live.get(sub) != subvalue -%}
+            {%- set _ = changed.append(key ~ '.' ~ sub) -%}
+          {%- endfor -%}
+        {%- elif live != value -%}
+          {%- set _ = changed.append(key) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ changed }}
+  when: pelican_wings_config_desired != pelican_wings_config_live
+
+- name: Write the Wings configuration
+  ansible.builtin.copy:
+    content: "{{ pelican_wings_config_desired | to_nice_yaml(indent=2) }}"
     dest: "{{ pelican_wings_config_dir }}/config.yml"
     owner: root
     group: root
     mode: "0600"
+  when: pelican_wings_config_desired != pelican_wings_config_live
   no_log: true # carries the node token
   notify: Restart wings
+
+# Kept separate from the write, which is skipped when nothing differs.
+- name: Enforce the Wings configuration's ownership and mode
+  ansible.builtin.file:
+    path: "{{ pelican_wings_config_dir }}/config.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  when: pelican_wings_config_stat.stat.exists or pelican_wings_config_desired != pelican_wings_config_live
 
 - name: Install the wings systemd unit
   ansible.builtin.template:
