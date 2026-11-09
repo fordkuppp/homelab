@@ -21,7 +21,7 @@ of the image build finishing.
 
 | Where | What |
 | --- | --- |
-| `kubernetes/apps/blog/` | Deployment (2× nginx-unprivileged, read-only root), Service, HTTPRoute, ImageRepository + ImagePolicy |
+| `kubernetes/apps/blog/` | Deployment (1× nginx-unprivileged, read-only root), Service, HTTPRoute, ImageRepository + ImagePolicy |
 | `kubernetes/apps/image-automation/` | write-access GitRepository `homelab-write` (GitHub App auth), the app's credentials (ExternalSecret), the ImageUpdateAutomation. Shared: any future app can add an ImagePolicy in `flux-system` and a marker |
 | `kubernetes/apps/gateway/gateway.yaml` | listener `https-public-blog`, exact hostname, cert `public-tls` |
 | `kubernetes/apps/dns/records.yaml` | DNSEndpoint `public`: `blog.fordkuppp.me A 117.18.125.45`, proxy off |

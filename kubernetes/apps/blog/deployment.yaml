@@ -1,6 +1,8 @@
 # Hugo output baked into nginx-unprivileged at build time; see image.yaml for
-# how new posts arrive. Two replicas so a node-local hiccup or a rollout never
-# shows the internet an error page.
+# how new posts arrive. One replica: this is a one-node cluster, so a second
+# copy adds no availability, and the default rolling update (maxSurge 1,
+# maxUnavailable 0 at this size) already starts the new pod before the old one
+# goes away.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,7 +12,7 @@ metadata:
     app.kubernetes.io/name: blog
 spec:
   revisionHistoryLimit: 3
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: blog
