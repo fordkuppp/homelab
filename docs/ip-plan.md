@@ -68,8 +68,11 @@ Everything internet-facing resolves to the edge VPS, never to the LAN:
 | `derp.fordkuppp.me` | `117.18.125.44` (first IP) | the DERP relay |
 | `*.games.fordkuppp.me` | `117.18.125.45` (second IP) | raw TCP via caddy-l4 |
 | `*.app.fordkuppp.me` | `117.18.125.45` (second IP) | HTTPS via Caddy, re-encrypted to `192.168.1.3` over the tailnet |
+| `blog.fordkuppp.me` | `117.18.125.45` (second IP) | same as `*.app`; an explicit record, not a wildcard |
 
-All three are `DNSEndpoint`s in `kubernetes/apps/dns/records.yaml`, Cloudflare
+All four are `DNSEndpoint`s in `kubernetes/apps/dns/records.yaml`, Cloudflare
 proxy off. A public HTTP app is an HTTPRoute on the gateway's `https-public`
 listener plus a site block in `ansible/roles/caddy_gateway/files/Caddyfile`;
-the wildcard already resolves it.
+the wildcard already resolves it. A bare `<name>.fordkuppp.me` host additionally
+needs its own record and its own exact-hostname listener; see
+`docs/runbooks/blog.md`.

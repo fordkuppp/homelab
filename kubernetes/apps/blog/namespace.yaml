@@ -1,0 +1,6 @@
+# Static files only: no state, so no backup label, and nothing in-cluster to
+# talk to, so not enrolled in the ambient mesh.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blog

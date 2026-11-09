@@ -43,3 +43,20 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Public apps on a bare <name>.fordkuppp.me, for things people link to and
+    # keep (the *.app wildcard is for tools). One listener per host with an
+    # EXACT hostname: a `*.fordkuppp.me` listener would also match every
+    # *.local route, since Gateway API wildcards span any number of labels.
+    # All of them share `public-tls`; cert-manager issues one certificate
+    # covering every listener that references it.
+    - name: https-public-blog
+      protocol: HTTPS
+      port: 443
+      hostname: blog.fordkuppp.me
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: public-tls
+      allowedRoutes:
+        namespaces:
+          from: All

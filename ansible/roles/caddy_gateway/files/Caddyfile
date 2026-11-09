@@ -10,6 +10,9 @@
 # share.app.fordkuppp.me, plus its hostname in anubis_redirect_domains
 # (inventory/group_vars/edge.yaml). The *.app.fordkuppp.me wildcard already
 # resolves it.
+#
+# A bare <name>.fordkuppp.me host (the blog) is the same site block, but it
+# also needs its own DNS record and gateway listener -- see the blog block.
 
 # One Minecraft server: send the label the player typed to an upstream.
 # Minecraft has no Host header or SNI, but the client copies the typed
@@ -108,6 +111,19 @@ share.app.fordkuppp.me {
 		header_up Host {host}
 		transport http {
 			tls_server_name share.app.fordkuppp.me
+		}
+	}
+}
+
+# The blog. Same re-encrypt shape as share.app, but deliberately NO anubis:
+# a static site gains nothing from a bot challenge, and the challenge would
+# lock out search engines and RSS readers -- the blog's actual audience.
+blog.fordkuppp.me {
+	encode zstd gzip
+	reverse_proxy https://192.168.1.3:443 {
+		header_up Host {host}
+		transport http {
+			tls_server_name blog.fordkuppp.me
 		}
 	}
 }

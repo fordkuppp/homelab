@@ -1,0 +1,38 @@
+# Rewrites image tags in Git when an ImagePolicy resolves a newer one, then
+# pushes straight to main. The root sync picks the commit up like any other.
+#
+# Only lines carrying a `# {"$imagepolicy": "flux-system:<name>"}` marker are
+# touched, and only ImagePolicies in THIS namespace are considered -- so every
+# policy lives in flux-system, whichever app it serves.
+#
+# Renovate is told to ignore images managed here (renovate.json), so the two
+# never fight over the same line.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: homelab
+  namespace: flux-system
+spec:
+  interval: 2m0s
+  sourceRef:
+    kind: GitRepository
+    name: homelab-write
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: |
+        Bump images via Flux image automation
+
+        {{ range .Changed.Changes -}}
+        - {{ .OldValue }} -> {{ .NewValue }}
+        {{ end -}}
+    push:
+      branch: main
+  update:
+    path: ./kubernetes
+    strategy: Setters

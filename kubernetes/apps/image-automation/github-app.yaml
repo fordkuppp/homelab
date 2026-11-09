@@ -1,0 +1,36 @@
+# Write access to this repo, for ImageUpdateAutomation alone. The root sync
+# (FluxInstance) still pulls anonymously; only the automation pushes.
+#
+# Auth is a GitHub App (Flux `provider: github`): the controller trades the
+# app's private key for an installation token that lives one hour. The app has
+# Contents: read & write, installed on fordkuppp/homelab only. Setup is in
+# docs/runbooks/blog.md.
+#
+# Key names are the ones source-controller reads for provider: github.
+# Client ID rather than the numeric App ID: GitHub now recommends the
+# client ID as the JWT issuer. Installation *owner* rather than ID: the controller looks the ID up, so
+# reinstalling the app doesn't need a secret change.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: homelab-github-app
+  namespace: flux-system
+spec:
+  refreshInterval: 1h0m0s
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    template:
+      engineVersion: v2
+      data:
+        githubAppClientID: "{{ .clientID }}"
+        githubAppInstallationOwner: fordkuppp
+        githubAppPrivateKey: "{{ .privateKey }}"
+  data:
+    - secretKey: clientID
+      remoteRef:
+        key: flux_github_app_client_id
+    - secretKey: privateKey
+      remoteRef:
+        key: flux_github_app_private_key

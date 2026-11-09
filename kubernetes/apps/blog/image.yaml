@@ -1,0 +1,29 @@
+# The blog's CI (github.com/fordkuppp/blog) pushes ghcr.io/fordkuppp/blog with
+# tags <commit time, UTC, YYYYMMDDHHMMSS>-<short sha>. Commit time, not build
+# time, so re-running an old build can never outrank a newer post.
+#
+# Both objects sit in flux-system because ImageUpdateAutomation only reads
+# policies from its own namespace (see apps/image-automation).
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: blog
+  namespace: flux-system
+spec:
+  image: ghcr.io/fordkuppp/blog
+  interval: 2m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: blog
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: blog
+  filterTags:
+    pattern: '^(?P<ts>[0-9]{14})-[0-9a-f]{7}$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

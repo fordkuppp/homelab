@@ -206,6 +206,13 @@
       ],
       "ignoreUnstable": false,
       "automerge": false
+    },
+    {
+      "description": "Updated by Flux image automation (kubernetes/apps/image-automation), not Renovate. Two writers on one line would fight.",
+      "matchPackageNames": [
+        "ghcr.io/fordkuppp/blog"
+      ],
+      "enabled": false
     }
   ],
   "platformAutomerge": false

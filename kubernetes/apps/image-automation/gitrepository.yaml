@@ -1,0 +1,19 @@
+# A second view of this repo, authenticated as the GitHub App, so the
+# automation can push. Kept separate from the FluxInstance-managed
+# `flux-system` source so the root sync never depends on the app: if its key
+# breaks, image bumps stop and nothing else does.
+#
+# HTTPS, not SSH: the github provider mints an HTTPS installation token.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: homelab-write
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  url: https://github.com/fordkuppp/homelab
+  ref:
+    branch: main
+  provider: github
+  secretRef:
+    name: homelab-github-app

@@ -54,3 +54,21 @@ spec:
       recordTTL: 300
       targets:
         - 117.18.125.45 # edge VPS, second IP (Caddy)
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: public
+  namespace: dns
+  annotations:
+    # Same edge IP and same reasons as *.app: Caddy does its own ACME there.
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+spec:
+  endpoints:
+    # Bare <name>.fordkuppp.me hosts are explicit records, never a wildcard:
+    # a *.fordkuppp.me wildcard would make every typo resolve to the VPS.
+    - dnsName: blog.fordkuppp.me
+      recordType: A
+      recordTTL: 300
+      targets:
+        - 117.18.125.45 # edge VPS, second IP (Caddy)
