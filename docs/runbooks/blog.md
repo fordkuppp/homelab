@@ -11,7 +11,7 @@ flux-system/ImagePolicy blog       picks the highest timestamp
 flux-system/ImageUpdateAutomation  rewrites the tag in apps/blog/deployment.yaml,
                                    pushes to homelab/main as fluxcdbot
 root sync                          rolls out the Deployment
-reader → Caddy (edge VPS, no Anubis) → Envoy https-public-blog → blog Service
+reader → Caddy (edge VPS) → Anubis → Envoy https-public-blog → blog Service
 ```
 
 Publishing a post is a push to the blog repo. Expect it live within ~5 minutes
@@ -25,7 +25,9 @@ of the image build finishing.
 | `kubernetes/apps/image-automation/` | write-access GitRepository `homelab-write` (GitHub App auth), the app's credentials (ExternalSecret), the ImageUpdateAutomation. Shared: any future app can add an ImagePolicy in `flux-system` and a marker |
 | `kubernetes/apps/gateway/gateway.yaml` | listener `https-public-blog`, exact hostname, cert `public-tls` |
 | `kubernetes/apps/dns/records.yaml` | DNSEndpoint `public`: `blog.fordkuppp.me A 117.18.125.45`, proxy off |
-| `ansible/roles/caddy_gateway/files/Caddyfile` | `blog.fordkuppp.me` site block |
+| `ansible/roles/caddy_gateway/files/Caddyfile` | `blog.fordkuppp.me` site block, `import anubis` |
+| `ansible/inventory/group_vars/edge.yaml` | `blog.fordkuppp.me` in `anubis_redirect_domains` |
+| `ansible/roles/anubis/templates/botPolicies.yaml.j2` | `rss-feeds` rule: `index.xml` feeds bypass the challenge |
 | `renovate.json` | ignores `ghcr.io/fordkuppp/blog` so it never fights Flux |
 
 ## One-time setup

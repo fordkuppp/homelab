@@ -115,10 +115,12 @@ share.app.fordkuppp.me {
 	}
 }
 
-# The blog. Same re-encrypt shape as share.app, but deliberately NO anubis:
-# a static site gains nothing from a bot challenge, and the challenge would
-# lock out search engines and RSS readers -- the blog's actual audience.
+# The blog. Same re-encrypt shape as share.app, behind Anubis like it.
+# Verified search crawlers and the RSS feeds are let through by the bot
+# policy (roles/anubis/templates/botPolicies.yaml.j2), so neither indexing nor
+# feed readers ever see a challenge.
 blog.fordkuppp.me {
+	import anubis
 	encode zstd gzip
 	reverse_proxy https://192.168.1.3:443 {
 		header_up Host {host}

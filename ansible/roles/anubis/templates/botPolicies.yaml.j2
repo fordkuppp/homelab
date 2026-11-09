@@ -21,6 +21,13 @@ bots:
   - import: (data)/clients/x-firefox-ai.yaml
   - import: (data)/crawlers/xai.yaml
   - import: (data)/common/keep-internet-working.yaml
+  # RSS/Atom feeds (Hugo: /index.xml and /<section>/index.xml). Feed readers
+  # can't run the challenge, and hosted ones (Feedly, Inoreader) fetch from
+  # outside Thailand, so without this every subscriber silently stops getting
+  # posts. Shared policy, but no other protected site serves these paths.
+  - name: rss-feeds
+    path_regex: ^/(.+/)?index\.xml$
+    action: ALLOW
   - name: generic-browser
     user_agent_regex: >-
       Mozilla|Opera

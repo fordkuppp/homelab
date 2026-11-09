@@ -43,6 +43,7 @@ anubis_enabled: true
 # redirect a passed challenge anywhere else.
 anubis_redirect_domains:
   - share.app.fordkuppp.me
+  - blog.fordkuppp.me
 
 # --- Custom Caddy build (needs Go on the Ansible controller) ---
 # Renovate tracks both.
