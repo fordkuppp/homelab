@@ -32,7 +32,7 @@ spec:
           # Tag is rewritten by Flux image automation; leave the marker alone.
           # The initial value is a placeholder: the first automation run replaces
           # it with the newest tag CI has pushed.
-          image: ghcr.io/fordkuppp/blog:20241120165327-280cb89 # {"$imagepolicy": "flux-system:blog"}
+          image: ghcr.io/fordkuppp/blog:20261109130627-c0210f4 # {"$imagepolicy": "flux-system:blog"}
           ports:
             - name: http
               containerPort: 8080
